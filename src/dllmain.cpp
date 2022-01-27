@@ -15,6 +15,7 @@
 #include "state.hpp"
 #include "menu.hpp"
 #include "meta.hpp"
+#include "preview-mode.hpp"
 
 void* FMOD_setVolume(FMOD::Channel* sound, float v) {
 	if (state().speed_hack_enabled && v >= 0.f)
@@ -187,6 +188,7 @@ void EditLevelLayer_onClone(EditLevelLayer* self) {
 
 void mod_main(HMODULE) {
 	// console.setup();
+	// std::cout << std::boolalpha;
 
 	state().load();
 
@@ -228,6 +230,8 @@ void mod_main(HMODULE) {
 
 	add_hook<&LevelInfoLayer_onClone>(base + 0x9e2c0);
 	add_hook<&EditLevelLayer_onClone>(base + 0x3da30);
+
+	preview_mode::init();
 
 	setup_imgui_menu();
 

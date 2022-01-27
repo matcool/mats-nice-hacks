@@ -83,6 +83,11 @@ void render_node_properties(CCNode* node) {
 	if (auto item = dynamic_cast<CCMenuItemSprite*>(node)) {
 		ImGui::Text("CCMenuItem selector: %s", format_addr(union_cast<void*>(item->getSelector())).c_str());
 	}
+	{
+		auto value = node->isVisible();
+		ImGui::Checkbox("Visible", &value);
+		if (value != node->isVisible()) node->setVisible(value);
+	}
 }
 
 void render_explorer_window(bool& open) {

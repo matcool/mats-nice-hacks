@@ -1,5 +1,6 @@
 #pragma once
 
+#define NOMINMAX
 #include <cocos2d.h>
 #include <cocos-ext.h>
 #include <stdint.h>
@@ -135,6 +136,10 @@ public:
 	void updateButtons() {
 		reinterpret_cast<void(__thiscall*)(EditorUI*)>(base + 0x41450)(this);
 	}
+
+	bool isPlayback() {
+		return from<bool>(this, 0x134);
+	}
 };
 
 class AppDelegate : public CCApplication {
@@ -148,8 +153,65 @@ public:
 	}
 };
 
-class GameObject : public CCSprite {
+enum class CustomColorMode {
+	Default = 0,
+	PlayerCol1 = 1,
+	PlayerCol2 = 2,
+	LightBG = 5,
+	Col1 = 3,
+	Col2 = 4,
+	Col3 = 6,
+	Col4 = 7,
+	DL = 8
+};
 
+class GameObject : public CCSprite {
+public:
+	auto& id() {
+		return from<int>(this, 0x2c4);
+	}
+	auto& triggerColor() {
+		return from<ccColor3B>(this, 0x2b8);
+	}
+	auto& triggerDuration() {
+		return from<float>(this, 0x2bc);
+	}
+	auto& triggerBlending() {
+		return from<bool>(this, 0x314);
+	}
+	void setObjectColor(ccColor3B color) {
+		return reinterpret_cast<void(__thiscall*)(GameObject*, ccColor3B)>(base + 0x75560)(this, color);
+	}
+	bool getIsTintObject() const {
+		return from<bool>(this, 0x2cb);
+	}
+	bool getHasColor() const {
+		return from<bool>(this, 0x24a);
+	}
+	auto getChildSprite() {
+		return from<CCSprite*>(this, 0x24c);
+	}
+	void setChildColor(ccColor3B color) {
+		if (getHasColor()) {
+			getChildSprite()->setColor(color);
+		}
+	}
+	// my own func
+	void setCustomColor(ccColor3B color) {
+		if (getHasColor()) setChildColor(color);
+		else setObjectColor(color);
+	}
+	auto getColorMode() {
+		auto active = from<CustomColorMode>(this, 0x308);
+		auto default_color = from<CustomColorMode>(this, 0x30c);
+		// TODO: gd checks some boolean
+		if (active == CustomColorMode::Default)
+			active = default_color;
+		return active;
+	}
+	bool isSelected() {
+		return from<bool>(this, 0x316);
+	}
 };
 
 class FLAlertLayer : public CCLayerColor {
@@ -194,10 +256,66 @@ class EditorPauseLayer : public CCLayer {
 
 };
 
+class DrawGridLayer : public CCLayer {
+public:
+	float timeForXPos(float pos) {
+		return reinterpret_cast<float(__vectorcall*)(
+			float, float, float, float, float, float,
+			DrawGridLayer*
+		)>(base + 0x934f0)(0.f, pos, 0.f, 0.f, 0.f, 0.f, this);
+	}
+	auto getPlaybackLinePos() {
+		return from<float>(this, 0x120);
+	}
+};
+
+class SettingsColorObject : public CCNode {
+public:
+	ccColor3B m_color;
+	bool m_blending;
+	int m_custom;
+};
+
+static_assert(sizeof(SettingsColorObject) == 0xF0, "size wrong");
+
+class LevelSettingsObject : public CCNode {
+public:
+	SettingsColorObject* m_background_color;
+	SettingsColorObject* m_ground_color;
+	SettingsColorObject* m_line_color;
+	SettingsColorObject* m_object_color;
+	SettingsColorObject* m_3dl_color;
+	SettingsColorObject* m_color1;
+	SettingsColorObject* m_color2;
+	SettingsColorObject* m_color3;
+	SettingsColorObject* m_color4;
+};
+
 class LevelEditorLayer : public CCLayer {
 public:
 	auto editorUI() {
 		return from<EditorUI*>(this, 0x15c);
+	}
+	auto backgroundSprite() {
+		return from<CCSprite*>(this, 0x160);
+	}
+	auto gameLayer() {
+		return from<CCLayer*>(this, 0x188);
+	}
+	auto getLevelSettings() {
+		return from<LevelSettingsObject*>(this, 0x190);
+	}
+	auto getDrawGrid() {
+		return from<DrawGridLayer*>(this, 0x184);
+	}
+	auto getPlaytestState() {
+		return from<int>(this, 0x198);
+	}
+	auto getPlayer1() {
+		return from<PlayerObject*>(this, 0x19c);
+	}
+	auto getLevelSections() {
+		return from<CCArray*>(this, 0x16c);
 	}
 };
 

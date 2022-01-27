@@ -102,6 +102,7 @@ void imgui_render() {
 			}
 			ImGui::Checkbox("Hide attempts", &state().hide_attempts);
 			ImGui::Checkbox("Hide player", &state().hide_player);
+			ImGui::Checkbox("Editor preview mode", &state().preview_mode);
 		}
 		ImGui::End();
 

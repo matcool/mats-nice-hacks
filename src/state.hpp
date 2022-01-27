@@ -29,6 +29,8 @@ struct StateStruct {
 	bool hide_attempts = false;
 	bool hide_player = false;
 
+	bool preview_mode = false;
+
 	void load();
 	void save();
 };
