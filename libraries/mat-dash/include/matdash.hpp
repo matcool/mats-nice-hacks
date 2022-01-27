@@ -19,10 +19,17 @@ void add_hook(uintptr_t address) {
             );
         }
     } else if constexpr (std::is_same_v<CallConv, Thiscall>) {
-        __mat_dash_add_hook(addr,
-            &thiscall<decltype(func)>::wrap<func>,
-            reinterpret_cast<void**>(&Orig<func, CallConv>::orig)
-        );
+        if constexpr (std::is_member_function_pointer_v<decltype(func)>) {
+            __mat_dash_add_hook(addr,
+                &thiscall<RemoveThiscall<MemberToFn<decltype(func)>::type>::type>::wrap<WrapMemberCall<func>::wrap>,
+                reinterpret_cast<void**>(&Orig<func, CallConv>::orig)
+            );
+        } else {
+            __mat_dash_add_hook(addr,
+                &thiscall<decltype(func)>::wrap<func>,
+                reinterpret_cast<void**>(&Orig<func, CallConv>::orig)
+            );
+        }
     } else if constexpr (std::is_same_v<CallConv, Optfastcall>) {
         __mat_dash_add_hook(addr,
             &optfastcall<decltype(func)>::wrap<func>,

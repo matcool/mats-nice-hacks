@@ -140,6 +140,10 @@ public:
 	bool isPlayback() {
 		return from<bool>(this, 0x134);
 	}
+
+	void updateZoom(float amt) {
+		reinterpret_cast<void(__vectorcall*)(float, float, EditorUI*)>(base + 0x48c30)(0.f, amt, this);
+	}
 };
 
 class AppDelegate : public CCApplication {
@@ -178,6 +182,9 @@ public:
 	}
 	auto& triggerBlending() {
 		return from<bool>(this, 0x314);
+	}
+	auto& touchTriggered() {
+		return from<bool>(this, 0x271);
 	}
 	void setObjectColor(ccColor3B color) {
 		return reinterpret_cast<void(__thiscall*)(GameObject*, ccColor3B)>(base + 0x75560)(this, color);

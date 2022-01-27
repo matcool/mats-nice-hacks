@@ -89,7 +89,7 @@ struct Orig {
 };
 
 template <auto func, typename CallConv>
-struct Orig<func, CallConv, std::enable_if_t<std::is_member_function_pointer<decltype(func)>::value> > {
+struct Orig<func, CallConv, std::enable_if_t<std::is_member_function_pointer<decltype(func)>::value>> {
     inline static WrapperOptcall<typename MemberToFn<decltype(func)>::type> orig;
 };
 
@@ -97,6 +97,12 @@ template <auto func>
 struct Orig<func, Thiscall, void> {
     inline static typename AddThiscall<decltype(func)>::type orig;
 };
+
+template <auto func>
+struct Orig<func, Thiscall, std::enable_if_t<std::is_member_function_pointer<decltype(func)>::value>> {
+    inline static typename MemberToFn<decltype(func)>::type orig;
+};
+
 
 template <auto func>
 struct Orig<func, Stdcall, void> {

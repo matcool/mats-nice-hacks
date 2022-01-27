@@ -28,13 +28,13 @@ RT_ADD(
 
 		bool dispatchKeyboardMSG(enumKeyCodes key, bool);
 		
-		bool getAltKeyPressed() const;
+		virtual bool getShiftKeyPressed() const;
 
-		bool getCommandKeyPressed() const;
+		virtual bool getControlKeyPressed() const;
 
-		bool getControlKeyPressed() const;
+		virtual bool getAltKeyPressed() const;
 
-		bool getShiftKeyPressed() const;
+		virtual bool getCommandKeyPressed() const;
 
 		const char* keyToString(enumKeyCodes key);
 

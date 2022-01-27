@@ -81,9 +81,9 @@ struct GDColor {
 
 	GDColor() {}
 	GDColor(u8 r, u8 g, u8 b, bool blending) : r(r), g(g), b(b), blending(blending) {}
-	GDColor(const ccColor3B color) : r(color.r), g(color.g), b(color.b), blending(false) {}
+	GDColor(const ccColor3B color, bool blending = false) : r(color.r), g(color.g), b(color.b), blending(blending) {}
 	// TODO: get blending
-	GDColor(GameObject* object) : GDColor(object->triggerColor()) {}
+	GDColor(GameObject* object) : GDColor(object->triggerColor(), object->triggerBlending()) {}
 	operator ccColor3B() const { return { r, g, b }; }
 };
 
@@ -112,10 +112,18 @@ bool is_color_trigger(GameObject* object) {
 	return color_trigger_ids.find(object->id()) != color_trigger_ids.end();
 }
 
+void log_obj_vector(const std::vector<GameObject*>& objects) {
+	std::cout << '[';
+	for (auto obj : objects)
+		std::cout << "id=" << obj << " x=" << obj->getPosition().x << ", ";
+	std::cout << ']' << std::endl;
+}
+
 class MyEditorLayer : public LevelEditorLayer, public ExtendBase<MyEditorLayer> {
 public:
 	Field<std::unordered_map<ColorTriggers, std::vector<GameObject*>>> m_color_triggers;
 	Field<float> m_last_pos;
+	Field<CCSpriteBatchNode*> m_blending_batch_node;
 
 	void dtor() {
 		ExtendBase::destroy();
@@ -134,6 +142,14 @@ public:
 		triggers[ColorTriggers::Col2];
 		triggers[ColorTriggers::Col3];
 		triggers[ColorTriggers::Col4];
+
+        auto gamesheet_texture = CCTextureCache::sharedTextureCache()->addImage("GJ_GameSheet.png", false);
+        auto blending_batch_node = CCSpriteBatchNode::createWithTexture(gamesheet_texture);
+        this->gameLayer()->addChild(blending_batch_node, 0);
+
+        blending_batch_node->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+
+        this->*m_blending_batch_node = blending_batch_node;
 
 		return true;
 	}
@@ -156,6 +172,14 @@ public:
 				triggers.erase(triggers.begin() + i);
 				break;
 			}
+		}
+	}
+
+	void move_trigger(GameObject* object) {
+		if (is_color_trigger(object)) {
+			// TODO: just swap it instead of removing and reinserting
+			this->remove_trigger(object);
+			this->insert_trigger(object);
 		}
 	}
 
@@ -197,16 +221,6 @@ public:
 		orig<&MyEditorLayer::removeSpecial>(this, object);
 		if (is_color_trigger(object)) {
 			this->remove_trigger(object);
-		}
-	}
-
-	void moveObject(GameObject* object, CCPoint to) {
-		orig<&MyEditorLayer::moveObject>(this, object, to);
-		if (is_color_trigger(object)) {
-			println("moving trigger");
-			// TODO: just swap it instead of removing and reinserting
-			this->remove_trigger(object);
-			this->insert_trigger(object);
 		}
 	}
 
@@ -319,13 +333,40 @@ bool GameObject_shouldBlendColor(GameObject* self) {
 		return false;
 }
 
+void EditorUI_moveObject(EditorUI* self, GameObject* object, CCPoint to) {
+	orig<&EditorUI_moveObject>(self, object, to);
+	reinterpret_cast<MyEditorLayer*>(self->getParent())->move_trigger(object);
+}
+
+void EditorUI_scrollWheel(EditorUI* _self, float dy, float dx) {
+	auto self = reinterpret_cast<EditorUI*>(reinterpret_cast<uintptr_t>(_self) - 0xf8);
+	auto layer = reinterpret_cast<LevelEditorLayer*>(self->getParent())->gameLayer();
+	auto zoom = layer->getScale();
+
+	static_assert(offsetof(CCDirector, m_pKeyboardDispatcher) == 0x4c, "it wrong!");
+	auto kb = CCDirector::sharedDirector()->m_pKeyboardDispatcher;
+	if (kb->getControlKeyPressed()) {
+		zoom = static_cast<float>(std::pow(2.71828182845904523536, std::log(std::max(zoom, 0.001f)) - dy * 0.01f));
+		// zoom limit
+		zoom = std::max(zoom, 0.01f);
+		zoom = std::min(zoom, 1000000.f);
+		self->updateZoom(zoom);
+	} else if (kb->getShiftKeyPressed()) {
+		layer->setPositionX(layer->getPositionX() - dy * 1.f);
+	} else {
+		orig<&EditorUI_scrollWheel, Thiscall>(_self, dy, dx);
+	}
+}
+
 void preview_mode::init() {
 	add_hook<&MyEditorLayer::updateVisibility, Thiscall>(base + 0x8ef20);
 	add_hook<&MyEditorLayer::addSpecial>(base + 0x8ed10);
 	add_hook<&MyEditorLayer::init>(base + 0x8c2c0);
 	add_hook<&MyEditorLayer::dtor>(base + 0x8c080);
-	add_hook<&MyEditorLayer::moveObject>(base + 0x4b410);
+	add_hook<&EditorUI_moveObject>(base + 0x4b410);
 	add_hook<&MyEditorLayer::removeSpecial>(base + 0x8ee30);
+
+	add_hook<&EditorUI_scrollWheel, Thiscall>(base + 0x4ee90);
 
 	add_hook<&EditorPauseLayer_init>(base + 0x3e2e0);
 	add_hook<&EditorPauseLayer_dtor>(base + 0x3e280);

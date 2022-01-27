@@ -5,7 +5,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(onepointninegdpsmod VERSION 1.0.0)
 
-add_library(${PROJECT_NAME} SHARED src/dllmain.cpp src/explorer.cpp src/state.cpp src/menu.cpp)
+add_library(${PROJECT_NAME} SHARED
+  src/dllmain.cpp
+  src/explorer.cpp
+  src/state.cpp
+  src/menu.cpp
+  src/preview-mode.cpp
+)
 
 add_subdirectory(libraries/minhook)
 add_subdirectory(libraries/imgui-hook)
