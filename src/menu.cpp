@@ -103,6 +103,10 @@ void imgui_render() {
 			ImGui::Checkbox("Hide attempts", &state().hide_attempts);
 			ImGui::Checkbox("Hide player", &state().hide_player);
 			ImGui::Checkbox("Editor preview mode", &state().preview_mode);
+			if (ImGui::Checkbox("Edit level", &state().edit_level) || force) {
+				// PauseLayer::init
+				patch_toggle(base + 0xd62ef, { 0x90, 0x90 }, state().edit_level);
+			}
 		}
 		ImGui::End();
 

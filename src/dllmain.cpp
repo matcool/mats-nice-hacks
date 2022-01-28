@@ -184,10 +184,10 @@ void EditLevelLayer_onClone(EditLevelLayer* self) {
 	level->songID() = self->level()->songID();
 }
 
-static Console console;
+// static Console console;
 
 void mod_main(HMODULE) {
-	console.setup();
+	// console.setup();
 	std::cout << std::boolalpha;
 
 	state().load();

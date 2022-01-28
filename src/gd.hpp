@@ -219,6 +219,9 @@ public:
 	bool isSelected() {
 		return from<bool>(this, 0x316);
 	}
+	bool shouldBlendColor() {
+		return reinterpret_cast<bool(__thiscall*)(GameObject*)>(base + 0x6ece0)(this);
+	}
 };
 
 class FLAlertLayer : public CCLayerColor {
@@ -323,6 +326,12 @@ public:
 	}
 	auto getLevelSections() {
 		return from<CCArray*>(this, 0x16c);
+	}
+	void addToSection(GameObject* object) {
+		reinterpret_cast<void(__thiscall*)(LevelEditorLayer*, GameObject*)>(base + 0x8d220)(this, object);
+	}
+	auto getObjectBatchNode() {
+		return from<CCSpriteBatchNode*>(this, 0x164);
 	}
 };
 

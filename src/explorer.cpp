@@ -71,7 +71,6 @@ void render_node_properties(CCNode* node) {
 			const auto win_size = CCDirector::sharedDirector()->getWinSize();
 			ImGui::Text("Window size: %.2fx%.2f", win_size.width, win_size.height);
 			ImGui::Text("World space: %.2f, %.2f", pos.x, pos.y);
-
 		}
 		ImGui::TreePop();
 	}
@@ -87,6 +86,11 @@ void render_node_properties(CCNode* node) {
 		auto value = node->isVisible();
 		ImGui::Checkbox("Visible", &value);
 		if (value != node->isVisible()) node->setVisible(value);
+	}
+	{
+		auto value = node->getZOrder();
+		ImGui::InputInt("Z Order", &value);
+		if (value != node->getZOrder()) node->setZOrder(value);
 	}
 }
 

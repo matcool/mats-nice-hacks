@@ -28,6 +28,7 @@ struct StateStruct {
 	bool verify_hack = false;
 	bool hide_attempts = false;
 	bool hide_player = false;
+	bool edit_level = false;
 
 	bool preview_mode = false;
 
@@ -41,7 +42,7 @@ DEF_SCHEMA(StateStruct, speed, has_retry_keybind,
 	no_transition, no_trail, no_wave_trail, solid_wave_trail,
 	no_particles, copy_hack, fps_bypass, fps,
 	hide_practice, show_percent, verify_hack,
-	hide_attempts)
+	hide_attempts, edit_level)
 
 template <size_t N, class T>
 void load_schema_loop(T* obj, const std::unordered_map<std::string, std::string>& values) {

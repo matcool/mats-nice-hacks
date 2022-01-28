@@ -77,13 +77,13 @@ T lerp(float amt, T a, T b) {
 
 struct GDColor {
 	u8 r, g, b;
-	bool blending;
+	bool blending = false;
 
 	GDColor() {}
 	GDColor(u8 r, u8 g, u8 b, bool blending) : r(r), g(g), b(b), blending(blending) {}
 	GDColor(const ccColor3B color, bool blending = false) : r(color.r), g(color.g), b(color.b), blending(blending) {}
-	// TODO: get blending
 	GDColor(GameObject* object) : GDColor(object->triggerColor(), object->triggerBlending()) {}
+	GDColor(SettingsColorObject* color) : GDColor(color->m_color, color->m_blending) {}
 	operator ccColor3B() const { return { r, g, b }; }
 };
 
@@ -119,19 +119,31 @@ void log_obj_vector(const std::vector<GameObject*>& objects) {
 	std::cout << ']' << std::endl;
 }
 
+// TODO: this
+GDColor calculate_lbg(const GDColor& bg_color) {
+	auto color = bg_color;
+	color.blending = true;
+	return color;
+}
+
 class MyEditorLayer : public LevelEditorLayer, public ExtendBase<MyEditorLayer> {
 public:
 	Field<std::unordered_map<ColorTriggers, std::vector<GameObject*>>> m_color_triggers;
+	Field<std::unordered_map<CustomColorMode, bool>> m_current_color;
+	Field<std::unordered_set<GameObject*>> m_blending_objs;
 	Field<float> m_last_pos;
 	Field<CCSpriteBatchNode*> m_blending_batch_node;
+	static MyEditorLayer* s_instance;
 
 	void dtor() {
 		ExtendBase::destroy();
 		orig<&MyEditorLayer::dtor>(this);
+		s_instance = nullptr;
 	}
 
 	bool init(GJGameLevel* level) {
 		if (!orig<&MyEditorLayer::init>(this, level)) return false;
+		s_instance = this;
 
 		auto& triggers = this->*m_color_triggers;
 		// initialize them with empty vectors
@@ -143,13 +155,14 @@ public:
 		triggers[ColorTriggers::Col3];
 		triggers[ColorTriggers::Col4];
 
-        auto gamesheet_texture = CCTextureCache::sharedTextureCache()->addImage("GJ_GameSheet.png", false);
-        auto blending_batch_node = CCSpriteBatchNode::createWithTexture(gamesheet_texture);
-        this->gameLayer()->addChild(blending_batch_node, 0);
+		auto gamesheet_texture = CCTextureCache::sharedTextureCache()->addImage("GJ_GameSheet.png", false);
+		auto blending_batch_node = CCSpriteBatchNode::createWithTexture(gamesheet_texture);
+		println("blending node {}", blending_batch_node);
+		this->gameLayer()->addChild(blending_batch_node, 0);
 
-        blending_batch_node->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+		blending_batch_node->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
 
-        this->*m_blending_batch_node = blending_batch_node;
+		this->*m_blending_batch_node = blending_batch_node;
 
 		return true;
 	}
@@ -224,6 +237,30 @@ public:
 		}
 	}
 
+	void update_object_color(GameObject* object, const GDColor& color) {
+		object->setCustomColor(color);
+		CCSprite* node = object;
+		if (object->getHasColor())
+			node = object->getChildSprite();
+		auto batch = this->*m_blending_batch_node;
+		// TODO: proper z ordering (copy from zmx)
+		if (color.blending) {
+			if (node->getParent() != batch) {
+				node->removeFromParent();
+				batch->addChild(node);
+			}
+		} else {
+			if (node->getParent() == batch) {
+				node->removeFromParent();
+				this->getObjectBatchNode()->addChild(node);
+			}
+		}
+	}
+
+	bool is_color_blending(CustomColorMode mode) {
+		return (this->*m_current_color)[mode];
+	}
+
 	void updateVisibility(float dt) {
 		orig<&MyEditorLayer::updateVisibility, Thiscall>(this, dt);
 
@@ -248,31 +285,31 @@ public:
 			GDColor starting_color;
 			switch (type) {
 			case ColorTriggers::BG:
-				starting_color = settings->m_background_color->m_color;
+				starting_color = settings->m_background_color;
 				color = &bg_color;
 				break;
 			case ColorTriggers::Obj:
-				starting_color = settings->m_object_color->m_color;
+				starting_color = settings->m_object_color;
 				color = &obj_color;
 				break;
 			case ColorTriggers::DLine:
-				starting_color = settings->m_3dl_color->m_color;
+				starting_color = settings->m_3dl_color;
 				color = &dl_color;
 				break;
 			case ColorTriggers::Col1:
-				starting_color = settings->m_color1->m_color;
+				starting_color = settings->m_color1;
 				color = &color1;
 				break;
 			case ColorTriggers::Col2:
-				starting_color = settings->m_color2->m_color;
+				starting_color = settings->m_color2;
 				color = &color2;
 				break;
 			case ColorTriggers::Col3:
-				starting_color = settings->m_color3->m_color;
+				starting_color = settings->m_color3;
 				color = &color3;
 				break;
 			case ColorTriggers::Col4:
-				starting_color = settings->m_color4->m_color;
+				starting_color = settings->m_color4;
 				color = &color4;
 				break;
 			default:
@@ -281,7 +318,15 @@ public:
 			*color = this->calculate_color(triggers, pos, starting_color);
 		}
 
+		(this->*m_current_color)[CustomColorMode::Col1] = color1.blending;
+		(this->*m_current_color)[CustomColorMode::Col2] = color2.blending;
+		(this->*m_current_color)[CustomColorMode::Col3] = color3.blending;
+		(this->*m_current_color)[CustomColorMode::Col4] = color4.blending;
+
 		this->backgroundSprite()->setColor(bg_color);
+
+		auto lbg_color = calculate_lbg(bg_color);
+		// TODO: pcol1 and pcol2
 
 		auto sections = AwesomeArray<CCArray>(this->getLevelSections());
 		for (auto objects : sections) {
@@ -295,25 +340,30 @@ public:
 				auto mode = object->getColorMode();
 				switch (mode) {
 				case CustomColorMode::DL:
-					object->setCustomColor(dl_color);
+					this->update_object_color(object, dl_color);
 					break;
 				case CustomColorMode::Col1:
-					object->setCustomColor(color1);
+					this->update_object_color(object, color1);
 					break;
 				case CustomColorMode::Col2:
-					object->setCustomColor(color2);
+					this->update_object_color(object, color2);
 					break;
 				case CustomColorMode::Col3:
-					object->setCustomColor(color3);
+					this->update_object_color(object, color3);
 					break;
 				case CustomColorMode::Col4:
-					object->setCustomColor(color4);
+					this->update_object_color(object, color4);
+					break;
+				case CustomColorMode::LightBG:
+					this->update_object_color(object, lbg_color);
 					break;
 				}
 			}
 		}
 	}
 };
+
+MyEditorLayer* MyEditorLayer::s_instance = nullptr;
 
 bool EditorPauseLayer_init(void* self, void* idc) {
 	is_editor_paused = true;
@@ -328,9 +378,19 @@ void EditorPauseLayer_dtor(void* self) {
 bool GameObject_shouldBlendColor(GameObject* self) {
 	if (GameManager::sharedState()->getPlayLayer())
 		return orig<&GameObject_shouldBlendColor>(self);
-	else
-		// TODO: recreate it
+	else {
+		auto editor = MyEditorLayer::s_instance;
+		if (!editor) return false;
+
+		switch (self->getColorMode()) {
+		case CustomColorMode::Col1:
+		case CustomColorMode::Col2:
+		case CustomColorMode::Col3:
+		case CustomColorMode::Col4:
+			return editor->is_color_blending(self->getColorMode());
+		}
 		return false;
+	}
 }
 
 void EditorUI_moveObject(EditorUI* self, GameObject* object, CCPoint to) {
