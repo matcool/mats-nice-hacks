@@ -20,21 +20,21 @@ using u64 = uint64_t;
 using i64 = int64_t;
 
 
-// namespace {
-// 	template <class F>
-// 	struct ThiscallWrapper;
+namespace {
+	template <class F>
+	struct ThiscallWrapper;
 	
-// 	template <class R, class... Args>
-// 	struct ThiscallWrapper<R(*)(Args...)> {
-// 		template <auto func>
-// 		static R __thiscall wrap(Args... args) {
-// 			return func(args...);
-// 		}
-// 	};
+	template <class R, class... Args>
+	struct ThiscallWrapper<R(*)(Args...)> {
+		template <auto func>
+		static R __thiscall wrap(Args... args) {
+			return func(args...);
+		}
+	};
 
-// 	template <typename T>
-// 	using __to_handler_f_type = typename RemoveThiscall<typename MemberToFn<T>::type>::type;
-// }
+	template <typename T>
+	using __to_handler_f_type = typename matdash::detail::clean_fn_type<T>::type;
+}
 
 template <typename T, typename U>
 T union_cast(U value) {
@@ -47,8 +47,8 @@ T union_cast(U value) {
 	return u.a;
 }
 
-// template <typename H, __to_handler_f_type<H> Func>
-// static const auto to_handler = union_cast<H>(ThiscallWrapper<decltype(Func)>::wrap<Func>);
+template <typename H, __to_handler_f_type<H> Func>
+static const auto to_handler = union_cast<H>(ThiscallWrapper<decltype(Func)>::wrap<Func>);
 
 inline bool operator==(const cocos2d::ccColor3B a, const cocos2d::ccColor3B b) { return a.r == b.r && a.g == b.g && a.b == b.b; }
 inline bool operator!=(const cocos2d::ccColor3B a, const cocos2d::ccColor3B b) { return a.r != b.r || a.g != b.g || a.b != b.b; }
@@ -111,10 +111,18 @@ inline void patch(uintptr_t addr, const std::vector<uint8_t>& bytes) {
 	VirtualProtect(reinterpret_cast<void*>(addr), bytes.size(), old_prot, &old_prot);
 }
 
+namespace {
+	template <class F>
+	struct transform_member_fn_type_idk { using type = F; };
+
+	template <class R, class T, class... Args>
+	struct transform_member_fn_type_idk<R(T::*)(Args...)> { using type = R(__thiscall*)(T*, Args...); };
+}
+
 template <auto F>
 auto cocos_symbol(const char* name) {
 	static const auto addr = GetProcAddress((HMODULE)cocos_base, name);
-	return reinterpret_cast<MemberToFn<decltype(F)>::type>(addr);
+	return reinterpret_cast<transform_member_fn_type_idk<decltype(F)>::type>(addr);
 }
 
 template <typename T>

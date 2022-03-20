@@ -3,6 +3,7 @@
 #include "state.hpp"
 #include "gd.hpp"
 #include <matdash.hpp>
+#include <matdash/minhook.hpp>
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -12,6 +13,8 @@
 #include <unordered_map>
 #include <memory>
 #include <unordered_set>
+
+using namespace matdash;
 
 struct CompareTriggers {
 	bool operator()(GameObject* a, GameObject* b) const {

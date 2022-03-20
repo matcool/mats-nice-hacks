@@ -17,10 +17,12 @@
 #include "meta.hpp"
 #include "preview-mode.hpp"
 
-void* FMOD_setVolume(FMOD::Channel* sound, float v) {
+using namespace matdash;
+
+cc::stdcall<void*> FMOD_setVolume(FMOD::Channel* sound, float v) {
 	if (state().speed_hack_enabled && v >= 0.f)
 		sound->setPitch(state().speed);
-	return orig<&FMOD_setVolume, Stdcall>(sound, v);
+	return orig<&FMOD_setVolume>(sound, v);
 }
 
 void CCKeyboardDispatcher_dispatchKeyboardMSG(CCKeyboardDispatcher* self, int key, bool down) {
@@ -84,8 +86,8 @@ bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
 	return true;
 }
 
-void PlayLayer_update(PlayLayer* self, float dt) {
-	orig<&PlayLayer_update, Thiscall>(self, dt);
+cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
+	orig<&PlayLayer_update>(self, dt);
 	auto label = self->getChildByTag(12345);
 	if (label) {
 		const auto value = std::min(self->player1()->getPositionX() / self->levelLength(), 1.f) * 100.f;
@@ -99,6 +101,8 @@ void PlayLayer_update(PlayLayer* self, float dt) {
 	// this seems to reset on resetLevel, but im too lazy to go hook that
 	if (state().hide_attempts)
 		self->attemptsLabel()->setVisible(false);
+	
+	return {};
 }
 
 bool ColorSelectPopup_init(ColorSelectPopup* self, GameObject* obj, int color_id, int idk, int idk2) {
@@ -203,10 +207,10 @@ void mod_main(HMODULE) {
 	static_assert(offsetof(CCDirector, m_pobOpenGLView) == 0x68, "This is wrong!");
 
 	auto cocos = GetModuleHandleA("libcocos2d.dll");
-	add_hook<&FMOD_setVolume, Stdcall>(GetProcAddress(FMOD::base, "?setVolume@ChannelControl@FMOD@@QAG?AW4FMOD_RESULT@@M@Z"));
+	add_hook<&FMOD_setVolume>(GetProcAddress(FMOD::base, "?setVolume@ChannelControl@FMOD@@QAG?AW4FMOD_RESULT@@M@Z"));
 	add_hook<&CCKeyboardDispatcher_dispatchKeyboardMSG>(GetProcAddress(cocos, "?dispatchKeyboardMSG@CCKeyboardDispatcher@cocos2d@@QAE_NW4enumKeyCodes@2@_N@Z"));
 	// add_hook<&MenuLayer_init>(base + 0xaf210);
-	add_hook<&EditorUI_getLimitedPosition, Stdcall>(base + 0x4b500);
+	add_hook<&EditorUI_getLimitedPosition, matdash::Stdcall>(base + 0x4b500);
 
 	// for invisible dual fix (thx pie)
 	add_hook<&PlayLayer_spawnPlayer2>(base + 0xef0d0);
@@ -219,7 +223,7 @@ void mod_main(HMODULE) {
 	add_hook<&AppDelegate_trySaveGame>(base + 0x293f0);
 
 	add_hook<&PlayLayer_init>(base + 0xe35d0);
-	add_hook<&PlayLayer_update, Thiscall>(base + 0xe9360);
+	add_hook<&PlayLayer_update>(base + 0xe9360);
 
 	add_hook<&ColorSelectPopup_init>(base + 0x29db0);
 
