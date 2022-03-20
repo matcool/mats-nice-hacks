@@ -1,0 +1,3 @@
+[submodule "libraries/mat-dash"]
+	path = libraries/mat-dash
+	url = git@github.com:matcool/mat-dash.git
