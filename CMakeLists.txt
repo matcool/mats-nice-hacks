@@ -13,6 +13,15 @@ add_library(${PROJECT_NAME} SHARED
   src/preview-mode.cpp
 )
 
+# this is so stupid
+set(CMAKE_SIZEOF_VOID_P 4)
+
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL Clang)
+  # ensure 32 bit on clang
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -target i386-pc-windows-msvc ")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -target i386-pc-windows-msvc ")
+endif()
+
 add_subdirectory(libraries/minhook)
 add_subdirectory(libraries/imgui-hook)
 add_subdirectory(libraries/cocos-headers)
@@ -29,5 +38,3 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

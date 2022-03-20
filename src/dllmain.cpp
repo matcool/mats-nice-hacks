@@ -14,7 +14,6 @@
 #include "utils.hpp"
 #include "state.hpp"
 #include "menu.hpp"
-#include "meta.hpp"
 #include "preview-mode.hpp"
 
 using namespace matdash;

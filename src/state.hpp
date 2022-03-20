@@ -50,8 +50,8 @@ void load_schema_loop(T* obj, const std::unordered_map<std::string, std::string>
 	auto f = values.find(S::names[N]);
 	if (f != values.end()) {
 		const auto str = f->second;
-		using type = S::type_at<N>;
-		auto& value = S::value_at<N>(obj);
+		using type = typename S::template type_at<N>;
+		auto& value = S::template value_at<N>(obj);
 		if constexpr (std::is_same_v<type, bool>) {
 			value = str == "true";
 		} else if constexpr (std::is_same_v<type, float>) {
@@ -67,8 +67,8 @@ void load_schema_loop(T* obj, const std::unordered_map<std::string, std::string>
 template <size_t N, class T>
 void save_schema_loop(const T* obj, std::ofstream& file) {
 	using S = get_schema<T>;
-	using type = S::type_at<N>;
-	const auto& value = S::value_at<N>(obj);
+	using type = typename S::template type_at<N>;
+	const auto& value = S::template value_at<N>(obj);
 	file << S::names[N] << '=';
 	if constexpr (std::is_same_v<type, bool>) {
 		file << (value ? "true" : "false");

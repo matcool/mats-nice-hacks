@@ -9,6 +9,7 @@
 #include <string_view>
 #include <filesystem>
 #include <stdint.h>
+#include "gd.hpp"
 
 using u8 = uint8_t;
 using i8 = int8_t;
@@ -48,7 +49,7 @@ T union_cast(U value) {
 }
 
 template <typename H, __to_handler_f_type<H> Func>
-static const auto to_handler = union_cast<H>(ThiscallWrapper<decltype(Func)>::wrap<Func>);
+static const auto to_handler = union_cast<H>(ThiscallWrapper<decltype(Func)>::template wrap<Func>);
 
 inline bool operator==(const cocos2d::ccColor3B a, const cocos2d::ccColor3B b) { return a.r == b.r && a.g == b.g && a.b == b.b; }
 inline bool operator!=(const cocos2d::ccColor3B a, const cocos2d::ccColor3B b) { return a.r != b.r || a.g != b.g || a.b != b.b; }
@@ -122,7 +123,7 @@ namespace {
 template <auto F>
 auto cocos_symbol(const char* name) {
 	static const auto addr = GetProcAddress((HMODULE)cocos_base, name);
-	return reinterpret_cast<transform_member_fn_type_idk<decltype(F)>::type>(addr);
+	return reinterpret_cast<typename transform_member_fn_type_idk<decltype(F)>::type>(addr);
 }
 
 template <typename T>

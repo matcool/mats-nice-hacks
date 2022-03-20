@@ -65,7 +65,7 @@ A& operator->*(ExtendBase<T>* self, Field<A>& dummy) {
 	auto& fields = ExtendBase<T>::get_extra_fields();
 	void* key = reinterpret_cast<void*>(&dummy);
 	auto it = fields.find(key);
-	if (it != fields.end()) return it->second->get<A>();
+	if (it != fields.end()) return it->second->template get<A>();
 	auto container = reinterpret_cast<ValueContainer<>*>(new ValueContainer<A>());
 	fields[key] = container;
 	return container->get<A>();
@@ -360,6 +360,7 @@ public:
 				case CustomColorMode::LightBG:
 					this->update_object_color(object, lbg_color);
 					break;
+				default:;
 				}
 			}
 		}
@@ -391,6 +392,7 @@ bool GameObject_shouldBlendColor(GameObject* self) {
 		case CustomColorMode::Col3:
 		case CustomColorMode::Col4:
 			return editor->is_color_blending(self->getColorMode());
+		default:;
 		}
 		return false;
 	}

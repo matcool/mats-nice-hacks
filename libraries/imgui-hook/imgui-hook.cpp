@@ -158,22 +158,22 @@ void ImGuiHook::setupHooks(std::function<void(void*, void*, void**)> hookFunc) {
     auto cocosBase = GetModuleHandleA("libcocos2d.dll");
     hookFunc(
         GetProcAddress(cocosBase, "?swapBuffers@CCEGLView@cocos2d@@UAEXXZ"),
-        CCEGLView_swapBuffers_H,
+        reinterpret_cast<void*>(&CCEGLView_swapBuffers_H),
         reinterpret_cast<void**>(&CCEGLView_swapBuffers)
     );
     hookFunc(
         GetProcAddress(cocosBase, "?pollEvents@CCEGLView@cocos2d@@QAEXXZ"),
-        CCEGLView_pollEvents_H,
+        reinterpret_cast<void*>(&CCEGLView_pollEvents_H),
         reinterpret_cast<void**>(&CCEGLView_pollEvents)
     );
     hookFunc(
         GetProcAddress(cocosBase, "?toggleFullScreen@CCEGLView@cocos2d@@QAEX_N@Z"),
-        CCEGLView_toggleFullScreen_H,
+        reinterpret_cast<void*>(&CCEGLView_toggleFullScreen_H),
         reinterpret_cast<void**>(&CCEGLView_toggleFullScreen)
     );
     hookFunc(
         reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(GetModuleHandleA(0)) + 0x28f00),
-        &AppDelegate_applicationWillEnterForeground_H,
+        reinterpret_cast<void*>(&AppDelegate_applicationWillEnterForeground_H),
         reinterpret_cast<void**>(&AppDelegate_applicationWillEnterForeground)
     );
 }

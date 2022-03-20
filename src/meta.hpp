@@ -50,7 +50,7 @@ namespace meta {
 			auto work(Args&&... args) {
 				if constexpr (sizeof...(indexes) == 0) return std::make_tuple();
 				else {
-					return true_make_true_rest<indexes...>::work<Args...>(args...);
+					return true_make_true_rest<indexes...>::template work<Args...>(args...);
 				}
 			}	
 		};
