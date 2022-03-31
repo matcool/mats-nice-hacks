@@ -198,7 +198,7 @@ public:
 inline std::string base64_encode(std::string_view str) {
 	char* out;
 	const auto size = cocos2d::base64Encode(str.data(), str.size(), &out, false);
-	std::string outs(out, size);
+	std::string outs(out);
 	free(out);
 	return outs;
 }

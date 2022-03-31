@@ -68,7 +68,7 @@ bool EditLevelLayer_init(EditLevelLayer* self, GJGameLevel* level) {
 			dump_level(level, file);
 			free(path);
 
-			FLAlertLayer::create(nullptr, "Success", "The level has been saved", "OK", nullptr, 320.f, false, 0)->show();
+			// FLAlertLayer::create(nullptr, "Success", "The level has been saved", "OK", nullptr, 320.f, false, 0)->show();
 		}
 	};
 	auto button = CCMenuItemSpriteExtra::create(
@@ -96,13 +96,14 @@ bool LevelBrowserLayer_init(LevelBrowserLayer* self, GJSearchObject* obj) {
 				std::ifstream file(path);
 				println("going 2 import lvl");
 				auto* const level = import_level(file);
+				free(path);
 				println("imported");
-				// if (!level) {
+				if (!level) {
 				// 	FLAlertLayer::create(nullptr, "Error", "Failed to import", "OK", nullptr, 320.f, false, 0)->show();
-				// 	return;
-				// }
-				// auto scene = EditLevelLayer::scene(level);
-				// CCDirector::sharedDirector()->pushScene(scene);
+					return;
+				}
+				auto scene = EditLevelLayer::scene(level);
+				CCDirector::sharedDirector()->pushScene(scene);
 				println("switched scene");
 
 				// FLAlertLayer::create(nullptr, "Success", "The level has been loaded", "OK", nullptr, 320.f, false, 0)->show();
