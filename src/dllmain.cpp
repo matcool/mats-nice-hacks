@@ -1,4 +1,3 @@
-#define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <iostream>
@@ -15,10 +14,12 @@
 #include "state.hpp"
 #include "menu.hpp"
 #include "preview-mode.hpp"
+#include "save-file.hpp"
+#include "lvl-share.hpp"
 
 using namespace matdash;
 
-cc::stdcall<void*> FMOD_setVolume(FMOD::Channel* sound, float v) {
+cc::stdcall<int> FMOD_setVolume(FMOD::Channel* sound, float v) {
 	if (state().speed_hack_enabled && v >= 0.f)
 		sound->setPitch(state().speed);
 	return orig<&FMOD_setVolume>(sound, v);
@@ -50,6 +51,7 @@ void PlayLayer_spawnPlayer2(PlayLayer* self) {
 static bool g_holding_in_editor = false;
 
 void EditorUI_onPlaytest(EditorUI* self, void* btn) {
+	println("onPlaytest {}", g_holding_in_editor);
 	if (!g_holding_in_editor)
 		return orig<&EditorUI_onPlaytest>(self, btn);
 }
@@ -187,15 +189,15 @@ void EditLevelLayer_onClone(EditLevelLayer* self) {
 	level->songID() = self->level()->songID();
 }
 
-// static Console console;
+
+static Console console;
 
 void mod_main(HMODULE) {
-	// console.setup();
+	console.setup();
 	std::cout << std::boolalpha;
 
 	state().load();
 
-	sizeof(CCObject); sizeof(CCNode); sizeof(CCDirector); sizeof(CCSprite);
 	static_assert(sizeof(CCObject) == 24, "CCObject is wrong!");
 	static_assert(sizeof(CCNode) == 0xe8, "CCNode size is wrong");
 	static_assert(sizeof(CCNodeRGBA) == 0xf8, "CCNodeRGBA wrong");
@@ -235,6 +237,8 @@ void mod_main(HMODULE) {
 	add_hook<&EditLevelLayer_onClone>(base + 0x3da30);
 
 	preview_mode::init();
+	// save_file::init();
+	lvl_share::init();
 
 	setup_imgui_menu();
 

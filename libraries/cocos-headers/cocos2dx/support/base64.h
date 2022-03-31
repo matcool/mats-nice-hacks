@@ -43,7 +43,9 @@ namespace cocos2d {
  *
  @since v0.8.1
  */
-int base64Decode(unsigned char *in, unsigned int inLength, unsigned char **out);
+// mat edit: made them not unsigned char
+int base64Decode(const char *in, unsigned int inLength, char **out);
+int base64Encode(const char *in, unsigned int inLength, char **out, bool);
 
 }//namespace   cocos2d 
 

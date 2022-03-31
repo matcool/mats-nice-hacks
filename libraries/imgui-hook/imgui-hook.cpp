@@ -157,17 +157,17 @@ void __fastcall AppDelegate_applicationWillEnterForeground_H(void* self) {
 void ImGuiHook::setupHooks(std::function<void(void*, void*, void**)> hookFunc) {
     auto cocosBase = GetModuleHandleA("libcocos2d.dll");
     hookFunc(
-        GetProcAddress(cocosBase, "?swapBuffers@CCEGLView@cocos2d@@UAEXXZ"),
+        reinterpret_cast<void*>(GetProcAddress(cocosBase, "?swapBuffers@CCEGLView@cocos2d@@UAEXXZ")),
         reinterpret_cast<void*>(&CCEGLView_swapBuffers_H),
         reinterpret_cast<void**>(&CCEGLView_swapBuffers)
     );
     hookFunc(
-        GetProcAddress(cocosBase, "?pollEvents@CCEGLView@cocos2d@@QAEXXZ"),
+        reinterpret_cast<void*>(GetProcAddress(cocosBase, "?pollEvents@CCEGLView@cocos2d@@QAEXXZ")),
         reinterpret_cast<void*>(&CCEGLView_pollEvents_H),
         reinterpret_cast<void**>(&CCEGLView_pollEvents)
     );
     hookFunc(
-        GetProcAddress(cocosBase, "?toggleFullScreen@CCEGLView@cocos2d@@QAEX_N@Z"),
+        reinterpret_cast<void*>(GetProcAddress(cocosBase, "?toggleFullScreen@CCEGLView@cocos2d@@QAEX_N@Z")),
         reinterpret_cast<void*>(&CCEGLView_toggleFullScreen_H),
         reinterpret_cast<void**>(&CCEGLView_toggleFullScreen)
     );

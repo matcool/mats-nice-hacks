@@ -253,8 +253,7 @@ public:
      * Try to avoid big stacks of pushed scenes to reduce memory allocation. 
      * ONLY call it if there is a running scene.
      */
-    RT_REMOVE(  void pushScene(CCScene *pScene);    )
-    RT_ADD(     bool pushScene(CCScene *pScene);    )
+    void pushScene(CCScene *pScene);
 
     /** Pops out a scene from the queue.
      * This scene will replace the running one.
@@ -279,8 +278,7 @@ public:
     /** Replaces the running scene with a new one. The running scene is terminated.
      * ONLY call it if there is a running scene.
      */
-    RT_REMOVE(  void replaceScene(CCScene *pScene); )
-    RT_ADD(     bool replaceScene(CCScene *pScene); )
+    void replaceScene(CCScene *pScene);
 
     /** Ends the execution, releases the running scene.
      It doesn't remove the OpenGL view from its parent. You have to do it manually.

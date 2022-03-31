@@ -1,5 +1,4 @@
 #pragma once
-#define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <cocos2d.h>
@@ -9,7 +8,9 @@
 #include <string_view>
 #include <filesystem>
 #include <stdint.h>
+#include <vector>
 #include "gd.hpp"
+#include <../support/base64.h>
 
 using u8 = uint8_t;
 using i8 = int8_t;
@@ -129,67 +130,83 @@ auto cocos_symbol(const char* name) {
 template <typename T>
 struct CCArrayIterator {
 public:
-    CCArrayIterator(T* p) : m_ptr(p) {}
-    T* m_ptr;
+	CCArrayIterator(T* p) : m_ptr(p) {}
+	T* m_ptr;
 
-    T& operator*() { return *m_ptr; }
-    T* operator->() { return m_ptr; }
+	T& operator*() { return *m_ptr; }
+	T* operator->() { return m_ptr; }
 
-    auto& operator++() {
-        ++m_ptr;
-        return *this;
-    }
+	auto& operator++() {
+		++m_ptr;
+		return *this;
+	}
 
-    friend bool operator== (const CCArrayIterator<T>& a, const CCArrayIterator<T>& b) { return a.m_ptr == b.m_ptr; };
-    friend bool operator!= (const CCArrayIterator<T>& a, const CCArrayIterator<T>& b) { return a.m_ptr != b.m_ptr; };   
+	friend bool operator== (const CCArrayIterator<T>& a, const CCArrayIterator<T>& b) { return a.m_ptr == b.m_ptr; };
+	friend bool operator!= (const CCArrayIterator<T>& a, const CCArrayIterator<T>& b) { return a.m_ptr != b.m_ptr; };   
 };
 
 template <typename T>
 class AwesomeArray {
 public:
-    AwesomeArray(cocos2d::CCArray* arr) : m_arr(arr) {}
-    cocos2d::CCArray* m_arr;
-    auto begin() { return CCArrayIterator<T*>(reinterpret_cast<T**>(m_arr->data->arr)); }
-    auto end() { return CCArrayIterator<T*>(reinterpret_cast<T**>(m_arr->data->arr) + m_arr->count()); }
+	AwesomeArray(cocos2d::CCArray* arr) : m_arr(arr) {}
+	cocos2d::CCArray* m_arr;
+	auto begin() { return CCArrayIterator<T*>(reinterpret_cast<T**>(m_arr->data->arr)); }
+	auto end() { return CCArrayIterator<T*>(reinterpret_cast<T**>(m_arr->data->arr) + m_arr->count()); }
 
-    auto size() const { return m_arr->count(); }
-    T* operator[](size_t index) { return reinterpret_cast<T*>(m_arr->objectAtIndex(index)); }
+	auto size() const { return m_arr->count(); }
+	T* operator[](size_t index) { return reinterpret_cast<T*>(m_arr->objectAtIndex(index)); }
 };
 
 template <typename K, typename T>
 struct CCDictIterator {
 public:
-    CCDictIterator(cocos2d::CCDictElement* p) : m_ptr(p) {}
-    cocos2d::CCDictElement* m_ptr;
+	CCDictIterator(cocos2d::CCDictElement* p) : m_ptr(p) {}
+	cocos2d::CCDictElement* m_ptr;
 
-    std::pair<K, T> operator*() {
-        if constexpr (std::is_same<K, std::string>::value) {
-            return { m_ptr->getStrKey(), reinterpret_cast<T>(m_ptr->getObject()) };
-        } else {
-            return { m_ptr->getIntKey(), reinterpret_cast<T>(m_ptr->getObject()) };
-        }
-    }
+	std::pair<K, T> operator*() {
+		if constexpr (std::is_same<K, std::string>::value) {
+			return { m_ptr->getStrKey(), reinterpret_cast<T>(m_ptr->getObject()) };
+		} else {
+			return { m_ptr->getIntKey(), reinterpret_cast<T>(m_ptr->getObject()) };
+		}
+	}
 
-    auto& operator++() {
-        m_ptr = reinterpret_cast<decltype(m_ptr)>(m_ptr->hh.next);
-        return *this;
-    }
+	auto& operator++() {
+		m_ptr = reinterpret_cast<decltype(m_ptr)>(m_ptr->hh.next);
+		return *this;
+	}
 
-    friend bool operator== (const CCDictIterator<K, T>& a, const CCDictIterator<K, T>& b) { return a.m_ptr == b.m_ptr; };
-    friend bool operator!= (const CCDictIterator<K, T>& a, const CCDictIterator<K, T>& b) { return a.m_ptr != b.m_ptr; };
-    bool operator!= (int b) { return m_ptr != nullptr; }
+	friend bool operator== (const CCDictIterator<K, T>& a, const CCDictIterator<K, T>& b) { return a.m_ptr == b.m_ptr; };
+	friend bool operator!= (const CCDictIterator<K, T>& a, const CCDictIterator<K, T>& b) { return a.m_ptr != b.m_ptr; };
+	bool operator!= (int b) { return m_ptr != nullptr; }
 };
 
 
 template <typename K, typename T>
 struct AwesomeDict {
 public:
-    AwesomeDict(cocos2d::CCDictionary* dict) : m_dict(dict) {}
-    cocos2d::CCDictionary* m_dict;
-    auto begin() { return CCDictIterator<K, T*>(m_dict->m_pElements); }
-    // do not use this
-    auto end() { return nullptr; }
+	AwesomeDict(cocos2d::CCDictionary* dict) : m_dict(dict) {}
+	cocos2d::CCDictionary* m_dict;
+	auto begin() { return CCDictIterator<K, T*>(m_dict->m_pElements); }
+	// do not use this
+	auto end() { return nullptr; }
 
-    auto size() { return m_dict->count(); }
-    T* operator[](K key) { return reinterpret_cast<T*>(m_dict->objectForKey(key)); }
+	auto size() { return m_dict->count(); }
+	T* operator[](K key) { return reinterpret_cast<T*>(m_dict->objectForKey(key)); }
 };
+
+inline std::string base64_encode(std::string_view str) {
+	char* out;
+	const auto size = cocos2d::base64Encode(str.data(), str.size(), &out, false);
+	std::string outs(out, size);
+	free(out);
+	return outs;
+}
+
+inline std::string base64_decode(std::string_view str) {
+	char* out;
+	const auto size = cocos2d::base64Decode(str.data(), str.size(), &out);
+	std::string outs(out, size);
+	free(out);
+	return outs;
+}

@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <functional>
+#include <Windows.h>
 
 struct Console {
 	std::ofstream out, in;

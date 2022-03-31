@@ -1,4 +1,3 @@
-#define NOMINMAX
 #include "preview-mode.hpp"
 #include "state.hpp"
 #include "gd.hpp"

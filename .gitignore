@@ -1,2 +1,7 @@
 build/
 .vscode/
+*.exe
+*.json
+.cache
+*.bat
+lvl_geometrize.py

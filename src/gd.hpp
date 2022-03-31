@@ -1,6 +1,5 @@
 #pragma once
 
-#define NOMINMAX
 #include <cocos2d.h>
 #include <cocos-ext.h>
 #include <stdint.h>
@@ -31,12 +30,13 @@ namespace gd {
 			reinterpret_cast<void*(__thiscall*)(void*, const char*, size_t)>(base + 0xa3f0)(this, data, size);
 		}
 
-		string(const std::string& str) : string(str.c_str(), str.size()) {
-		}
+		explicit string(const std::string_view& str) : string(str.data(), str.size()) {}
+		// string(const char* str) : string(std::string_view(str)) {}
+		string(const std::string& str) : string(str.c_str(), str.size()) {}
 
 		size_t size() const { return m_size; }
 
-		string& operator=(const string& other) {
+		string& operator=(const std::string& other) {
 			if (m_capacity > 15) delete m_data.ptr;
 			reinterpret_cast<void*(__thiscall*)(void*, const char*, size_t)>(base + 0xa3f0)(this, other.c_str(), other.size());
 			return *this;
@@ -47,9 +47,11 @@ namespace gd {
 			return m_data.ptr;
 		}
 
-		operator std::string() const {
-			return std::string(c_str(), m_size);
+		std::string_view sv() const {
+			return std::string_view(c_str(), m_size);
 		}
+
+		operator std::string() const { return std::string(sv()); }
 	};
 }
 
@@ -150,11 +152,88 @@ class AppDelegate : public CCApplication {
 
 };
 
+enum class GJLevelType {
+	Local = 1,
+	Editor = 2,
+	Saved = 3
+};
+
 class GJGameLevel : public CCNode {
 public:
 	auto& songID() {
 		return from<int>(this, 0x1a4);
 	}
+	static auto create() {
+		return reinterpret_cast<GJGameLevel*(__stdcall*)()>(base + 0x621c0)();
+	}
+
+	cocos2d::CCDictionary* m_lastBuildSave;
+	int m_levelID;
+	gd::string m_levelName;
+	gd::string m_levelDesc;
+	gd::string m_levelString;
+	gd::string m_userName;
+	gd::string m_recordString;
+	gd::string m_uploadDate;
+	gd::string m_updateDate;
+	int m_userID;
+	int m_difficulty;
+	int m_audioTrack;
+	int m_songID;
+	int m_levelRev;
+	int m_objectCount;
+	int m_order;
+	int m_ratings;
+	int m_ratingsSum;
+	int m_downloads;
+	int m_completes;
+	bool m_isEditable;
+	bool m_isVerified;
+	bool m_isUploaded;
+	bool m_hasBeenModified;
+	int m_levelVersion;
+	int m_gameVersion;
+	int m_attempts;
+	int m_jumps;
+	int m_normalPercent;
+	int m_practicePercent;
+	int m_likes;
+	int m_dislikes;
+	int m_levelLength;
+	int m_featured;
+	bool m_demon;
+	int m_stars;
+	bool m_autoLevel;
+	int m_coins;
+	int m_password;
+	int m_originalLevel;
+	bool m_twoPlayerMode;
+	int m_failedPasswordAttempts;
+	bool m_showedSongWarning;
+	int m_starRatings;
+	int m_starRatingsSum;
+	int m_maxStarRatings;
+	int m_minStarRatings;
+	int m_demonVotes;
+	int m_rateStars;
+	bool m_rateFeature;
+	gd::string m_rateUser;
+	bool m_dontSave;
+	bool m_isHidden;
+	int m_requiredCoins;
+	bool m_isUnlocked;
+	cocos2d::CCPoint m_lastCameraPos;
+	float m_lastEditorZoom;
+	int m_lastBuildTab;
+	int m_lastBuildPage;
+	int m_lastBuildGroupID;
+	GJLevelType m_levelType;
+	int m_ID;
+	gd::string m_tempName;
+	int m_capacity001;
+	int m_capacity002;
+	int m_capacity003;
+	int m_capacity004;
 };
 
 enum class CustomColorMode {
@@ -224,10 +303,26 @@ public:
 	}
 };
 
+class FLAlertLayerProtocol {
+
+};
+
 class FLAlertLayer : public CCLayerColor {
 public:
 	auto menu() {
 		return from<CCMenu*>(this, 0x194);
+	}
+
+	static auto create(FLAlertLayerProtocol* protocol, const char* title,
+		const char* caption, const char* button1, const char* button2,
+		float height, bool absolute, float width) {
+		return reinterpret_cast<FLAlertLayer*(__fastcall*)(FLAlertLayerProtocol*, const char*, const char*,
+			const char*, const char*, float, bool, float)>(base + 0x15360)(protocol, title,
+			caption, button1, button2, height, absolute, width);
+	}
+
+	void show() {
+		return reinterpret_cast<void(__thiscall*)(FLAlertLayer*)>(base + 0x160a0)(this);
 	}
 };
 
@@ -257,6 +352,12 @@ public:
 			const char*, int, // ecx and edx
 			int, bool, const char*, const char*, float // stack
 		)>(base + 0x9800)(0.f, 0.f, 0.f, scale, 0.f, 0.f, label, width, idk, absolute, font, sprite, height);
+		// TODO: fix vectorcall version to work with clang
+		// __asm movss xmm3, scale
+		// auto ret = reinterpret_cast<ButtonSprite*(__fastcall*)(
+		// 	const char*, int, // ecx and edx
+		// 	int, bool, const char*, const char*, float // stack
+		// )>(base + 0x9800)(label, width, idk, absolute, font, sprite, height);
 		__asm add esp, 20;
 		return ret;
 	}
@@ -361,5 +462,88 @@ class EditLevelLayer : public CCLayer {
 public:
 	auto level() {
 		return from<GJGameLevel*>(this, 0x124);
+	}
+	static auto scene(GJGameLevel* level) {
+		return reinterpret_cast<CCScene*(__fastcall*)(GJGameLevel*)>(base + 0x3b4c0)(level);
+	} 
+};
+
+class GameLevelManager : public CCNode {
+public:
+	static auto sharedState() {
+		return reinterpret_cast<GameLevelManager*(__stdcall*)()>(base + 0x55850)();
+	}
+
+	GJGameLevel* createNewLevel() {
+		return reinterpret_cast<GJGameLevel*(__thiscall*)(GameLevelManager*)>(base + 0x56590)(this);
+	}
+};
+
+enum class SearchType {
+	Search = 0,
+	Downloaded = 1,
+	MostLiked = 2,
+	Trending = 3,
+	Recent = 4,
+	UsersLevels = 5,
+	Featured = 6,
+	Magic = 7,
+	Sends = 8,
+	MapPack = 9,
+	MapPackOnClick = 10,
+	Awarded = 11,
+	Followed = 12,
+	Friends = 13,
+	Users = 14,
+	LikedGDW = 15,
+	HallOfFame = 16,
+	FeaturedGDW = 17,
+	Similar = 18,
+	MyLevels = 98,
+	SavedLevels = 99,
+	FavouriteLevels = 100
+};
+
+class GJSearchObject : public CCNode {
+public:
+	static auto create(SearchType type, const std::string& query, const std::string& difficultyStr,
+		const std::string& lengthStr, int page, bool isStar, bool isCompleted,
+		bool isFeatured, int song, bool isOriginal, bool isTwoP,
+		bool isCustomSong, bool isSongFilter, bool isNoStar) {
+		return reinterpret_cast<GJSearchObject*(__fastcall*)(SearchType, gd::string, gd::string,
+			gd::string, int, bool, bool,
+			bool, int, bool, bool,
+			bool, bool, bool)>(base + 0x652a0)(
+			type, query, difficultyStr, lengthStr, page, isStar,
+			isCompleted, isFeatured, song, isOriginal, isTwoP,
+			isCustomSong, isSongFilter, isNoStar
+		);
+	}
+	static auto create(SearchType type) {
+		return reinterpret_cast<GJSearchObject*(__fastcall*)(SearchType)>(base + 0x650d0)(type);
+		// return create(type, "", "-", "-", 0, false, false, false, 0, false, false, false, false, false);
+	}
+
+	SearchType m_type;
+	gd::string m_string;
+	gd::string m_difficultyStr;
+	gd::string m_lengthStr;
+	int m_page;
+	bool m_star;
+	bool m_noStar;
+	int m_total;
+	bool m_uncompleted;
+	bool m_featured;
+	bool m_original;
+	bool m_twoPlayer;
+	int m_song;
+	bool m_customSong;
+	bool m_songFilter;
+};
+
+class LevelBrowserLayer : public CCLayer {
+public:
+	static auto create(GJSearchObject* obj) {
+		return reinterpret_cast<LevelBrowserLayer*(__fastcall*)(GJSearchObject*)>(base + 0x894f0)(obj);
 	}
 };
