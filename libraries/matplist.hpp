@@ -22,7 +22,27 @@ namespace matplist {
 			while (stream && (stream.get(out), out) == c) {}
 			return out;
 		}
-		using Scary = std::optional<std::pair<std::string, std::variant<Value, Dict>>>;
+		using ScaryInner = std::pair<std::string, std::variant<Value, Dict>>;
+		using Scary = std::optional<ScaryInner>;
+		struct DictIterator {
+			Dict& dict;
+			Scary val = {};
+			void next() {
+				auto n = dict.next();
+				val.swap(n);
+			}
+			DictIterator(Dict& dict) : dict(dict) {
+				next();
+			}
+			bool operator!=(const std::nullptr_t&) { return val.has_value(); }
+			auto& operator++() {
+				next();
+				return *this;
+			}
+			ScaryInner&& operator*() {
+				return std::move(*val);
+			}
+		};
 	public:
 		Dict(S& stream) : stream(stream) {}
 		Dict(const Dict&) = delete;
@@ -34,6 +54,8 @@ namespace matplist {
 				while (next()) {}
 			}
 		}
+		auto begin() { return DictIterator(*this); }
+		auto end() { return nullptr; }
 		Scary next() {
 			if (!stream) return std::nullopt;
 			stream.ignore(max_ignore, '<');
@@ -66,6 +88,9 @@ namespace matplist {
 			std::getline(stream, val.value, '<');
 			stream.ignore(max_ignore, '>');
 			return std::pair(key, val);
+		}
+		friend void swap(Dict& a, Dict& b) {
+			std::swap(a.done, b.done);
 		}
 	};
 

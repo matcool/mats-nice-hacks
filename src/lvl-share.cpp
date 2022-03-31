@@ -17,26 +17,22 @@ void dump_level(GJGameLevel* level, S& stream) {
 	// why? i dont know fod is stupid
 	const auto encoded_desc = base64_encode(base64_encode(level->m_levelDesc.sv()));
 	format_to(stream, R"(<d>
-		<k>kCEK</k><i>4</i>
-		<k>k2</k><s>{}</s>
-		<k>k3</k><s>{}</s>
-		<k>k4</k><s>{}</s>
-		{}
-		<k>k13</k><t/>
-		<k>k21</k><i>2</i>
-		<k>k50</k><i>24</i>
-	</d>)", level->m_levelName.sv(), encoded_desc, level->m_levelString.sv(), song_key);
+	<k>kCEK</k><i>4</i>
+	<k>k2</k><s>{}</s>
+	<k>k3</k><s>{}</s>
+	<k>k4</k><s>{}</s>
+	{}
+	<k>k13</k><t/>
+	<k>k21</k><i>2</i>
+	<k>k50</k><i>24</i>
+</d>)", level->m_levelName.sv(), encoded_desc, level->m_levelString.sv(), song_key);
 }
 
 template <class S>
 GJGameLevel* import_level(S& stream) {
 	auto data = matplist::parse(stream);
 	auto level = GameLevelManager::sharedState()->createNewLevel();
-	// i tried making it a for loop but failed ok
-	while (true) {
-		auto v = data.next();
-		if (!v) break;
-		auto& [key, var] = *v;
+	for (const auto& [key, var] : data) {
 		if (!std::holds_alternative<matplist::Value>(var)) continue;
 		matplist::Value value = std::get<matplist::Value>(var);
 		using namespace std::literals;
