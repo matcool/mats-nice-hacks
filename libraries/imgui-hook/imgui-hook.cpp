@@ -119,7 +119,8 @@ void __fastcall CCEGLView_pollEvents_H(CCEGLView* self) {
                 case WM_SYSKEYUP:
                     blockInput = true;
             }
-        } else if (msg.message == WM_KEYDOWN && msg.wParam == 'K') {
+        } else if (msg.message == WM_KEYDOWN && msg.wParam == VK_OEM_3) {
+            // std::cout << "key is " << std::hex << static_cast<unsigned>(msg.wParam) << std::endl;
             g_toggleCallback();
         }
 

@@ -60,6 +60,7 @@ auto format_addr(void* addr) {
 
 void render_node_properties(CCNode* node) {
 	ImGui::Text("Addr: %p", node);
+	ImGui::Text("Tag: %d", node->getTag());
 	{
 		auto value = node->getPosition();
 		ImGui::DragFloat2("Position", (float*)&value);

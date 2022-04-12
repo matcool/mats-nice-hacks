@@ -189,11 +189,25 @@ void EditLevelLayer_onClone(EditLevelLayer* self) {
 	level->songID() = self->level()->songID();
 }
 
+bool CustomizeObjectLayer_init(CustomizeObjectLayer* self, GameObject* obj, CCArray* objs) {
+	if (!orig<&CustomizeObjectLayer_init>(self, obj, objs)) return false;
+	
+	auto sprite = ButtonSprite::create("3DL", 0xdc, 0, 0.4, false, "bigFont.fnt", "GJ_button_04.png", 25.0);
+	auto button = CCMenuItemSpriteExtra::create(sprite, nullptr, self, union_cast<SEL_MenuHandler>(base + 0x2e600));
+	button->setTag(static_cast<int>(CustomColorMode::DL));
+	button->setPosition(100, 0);
+	from<CCArray*>(self, 0x1c4)->addObject(sprite);
+	self->menu()->addChild(button);
 
-// static Console console;
+	if (obj && obj->getColorMode() == CustomColorMode::DL) {
+		self->hightlightSelected(sprite);
+	}
+
+	return true;
+}
 
 void mod_main(HMODULE) {
-	// console.setup();
+	// static Console console;
 	std::cout << std::boolalpha;
 
 	state().load();
@@ -235,6 +249,8 @@ void mod_main(HMODULE) {
 
 	add_hook<&LevelInfoLayer_onClone>(base + 0x9e2c0);
 	add_hook<&EditLevelLayer_onClone>(base + 0x3da30);
+
+	add_hook<&CustomizeObjectLayer_init>(base + 0x2dc70);
 
 	preview_mode::init();
 	// save_file::init();

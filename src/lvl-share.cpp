@@ -86,6 +86,8 @@ bool LevelBrowserLayer_init(LevelBrowserLayer* self, GJSearchObject* obj) {
 		menu->setPosition(CCDirector::sharedDirector()->getWinSize().width - 30.f, 85);
 		self->addChild(menu);
 		constexpr auto handler = [](CCObject*, CCObject*) {
+			// FLAlertLayer::create(nullptr, "Success", "The level has been loaded", "OK", nullptr, 320.f, false, 0);
+			// return;
 			nfdchar_t* path = nullptr;
 			println("going 2 open the dialog");
 			if (NFD_OpenDialog("gmd", nullptr, &path) == NFD_OKAY) {
@@ -102,7 +104,6 @@ bool LevelBrowserLayer_init(LevelBrowserLayer* self, GJSearchObject* obj) {
 				CCDirector::sharedDirector()->pushScene(scene);
 				println("switched scene");
 
-				// FLAlertLayer::create(nullptr, "Success", "The level has been loaded", "OK", nullptr, 320.f, false, 0)->show();
 				println("popup");
 			}
 			println("done!");

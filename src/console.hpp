@@ -6,7 +6,7 @@
 
 struct Console {
 	std::ofstream out, in;
-	void setup() {
+	Console() {
 		AllocConsole();
 		out = decltype(out)("CONOUT$", std::ios::out);
 		in = decltype(in)("CONIN$", std::ios::in);

@@ -316,14 +316,16 @@ public:
 	static auto create(FLAlertLayerProtocol* protocol, const char* title,
 		const char* caption, const char* button1, const char* button2,
 		float height, bool absolute, float width) {
-		return reinterpret_cast<FLAlertLayer*(__fastcall*)(FLAlertLayerProtocol*, const char*, const char*,
+		auto ret = reinterpret_cast<FLAlertLayer*(__fastcall*)(FLAlertLayerProtocol*, const char*, const char*,
 			const char*, const char*, float, bool, float)>(base + 0x15360)(protocol, title,
 			caption, button1, button2, height, absolute, width);
+		__asm sub esp, 4
+		return ret;
 	}
 
-	void show() {
-		return reinterpret_cast<void(__thiscall*)(FLAlertLayer*)>(base + 0x160a0)(this);
-	}
+	// void show() {
+	// 	return reinterpret_cast<void(__thiscall*)(FLAlertLayer*)>(base + 0x160a0)(this);
+	// }
 };
 
 // inherits other classes too!
@@ -545,5 +547,12 @@ class LevelBrowserLayer : public CCLayer {
 public:
 	static auto create(GJSearchObject* obj) {
 		return reinterpret_cast<LevelBrowserLayer*(__fastcall*)(GJSearchObject*)>(base + 0x894f0)(obj);
+	}
+};
+
+class CustomizeObjectLayer : public FLAlertLayer {
+public:
+	void hightlightSelected(ButtonSprite* spr) {
+		reinterpret_cast<void(__thiscall*)(CustomizeObjectLayer*, ButtonSprite*)>(base + 0x2e730)(this, spr);
 	}
 };
