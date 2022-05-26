@@ -29,6 +29,9 @@ struct StateStruct {
 	bool hide_attempts = false;
 	bool hide_player = false;
 	bool edit_level = false;
+	bool hide_trigger_lines = false;
+	bool smooth_editor_trail = false;
+	bool hide_grid = false;
 
 	bool preview_mode = false;
 
@@ -42,7 +45,8 @@ DEF_SCHEMA(StateStruct, speed, has_retry_keybind,
 	no_transition, no_trail, no_wave_trail, solid_wave_trail,
 	no_particles, copy_hack, fps_bypass, fps,
 	hide_practice, show_percent, verify_hack,
-	hide_attempts, edit_level)
+	hide_attempts, edit_level, hide_trigger_lines, hide_grid,
+	smooth_editor_trail)
 
 template <size_t N, class T>
 void load_schema_loop(T* obj, const std::unordered_map<std::string, std::string>& values) {

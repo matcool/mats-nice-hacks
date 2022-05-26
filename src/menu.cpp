@@ -107,6 +107,21 @@ void imgui_render() {
 				// PauseLayer::init
 				patch_toggle(base + 0xd62ef, { 0x90, 0x90 }, state().edit_level);
 			}
+			if (ImGui::Checkbox("Hide trigger lines", &state().hide_trigger_lines) || force) {
+				// DrawGridLayer::draw
+				patch_toggle(base + 0x93e08, { 0xE9, 0xCE, 0x00, 0x00, 0x00, 0x90 }, state().hide_trigger_lines);
+			}
+			if (ImGui::Checkbox("Hide grid", &state().hide_grid) || force) {
+				// DrawGridLayer::draw
+				// gets rid of the line at the start and the ground line but oh well 
+				// setting the opacity to 0 didnt work if u zoomed in it was weird
+				patch_toggle(base + 0x938a0, { 0xe9, 0x5a, 0x01, 0x00, 0x00, 0x90 }, state().hide_grid);
+				patch_toggle(base + 0x93a4a, { 0xe9, 0x54, 0x01, 0x00, 0x00, 0x90 }, state().hide_grid);
+			}
+			if (ImGui::Checkbox("Smooth editor trail", &state().smooth_editor_trail) || force) {
+				// LevelEditorLayer::update
+				patch_toggle(base + 0x91a34, { 0x90, 0x90 }, state().smooth_editor_trail);
+			}
 		}
 		ImGui::End();
 
