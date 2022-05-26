@@ -319,13 +319,13 @@ public:
 		auto ret = reinterpret_cast<FLAlertLayer*(__fastcall*)(FLAlertLayerProtocol*, const char*, const char*,
 			const char*, const char*, float, bool, float)>(base + 0x15360)(protocol, title,
 			caption, button1, button2, height, absolute, width);
-		__asm sub esp, 4
+		__asm add esp, 24
 		return ret;
 	}
 
-	// void show() {
-	// 	return reinterpret_cast<void(__thiscall*)(FLAlertLayer*)>(base + 0x160a0)(this);
-	// }
+	void show() {
+		return reinterpret_cast<void(__thiscall*)(FLAlertLayer*)>(base + 0x160a0)(this);
+	}
 };
 
 // inherits other classes too!

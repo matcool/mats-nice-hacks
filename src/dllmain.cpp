@@ -206,6 +206,11 @@ bool CustomizeObjectLayer_init(CustomizeObjectLayer* self, GameObject* obj, CCAr
 	return true;
 }
 
+void MenuLayer_onMoreGames(MenuLayer* self, CCObject* sender) {
+	const auto layer = FLAlertLayer::create(nullptr, "Success", "The level has been saved", "OK", nullptr, 320.f, false, 0);
+	layer->show();
+}
+
 void mod_main(HMODULE) {
 	// static Console console;
 	std::cout << std::boolalpha;
@@ -251,6 +256,9 @@ void mod_main(HMODULE) {
 	add_hook<&EditLevelLayer_onClone>(base + 0x3da30);
 
 	add_hook<&CustomizeObjectLayer_init>(base + 0x2dc70);
+
+
+	// add_hook<&MenuLayer_onMoreGames>(base + 0xb0070);
 
 	preview_mode::init();
 	// save_file::init();

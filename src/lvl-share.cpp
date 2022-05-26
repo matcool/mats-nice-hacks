@@ -63,8 +63,7 @@ bool EditLevelLayer_init(EditLevelLayer* self, GJGameLevel* level) {
 			std::ofstream file(path);
 			dump_level(level, file);
 			free(path);
-
-			// FLAlertLayer::create(nullptr, "Success", "The level has been saved", "OK", nullptr, 320.f, false, 0)->show();
+			FLAlertLayer::create(nullptr, "Success", "The level has been saved", "OK", nullptr, 320.f, false, 0)->show();
 		}
 	};
 	auto button = CCMenuItemSpriteExtra::create(
@@ -86,27 +85,18 @@ bool LevelBrowserLayer_init(LevelBrowserLayer* self, GJSearchObject* obj) {
 		menu->setPosition(CCDirector::sharedDirector()->getWinSize().width - 30.f, 85);
 		self->addChild(menu);
 		constexpr auto handler = [](CCObject*, CCObject*) {
-			// FLAlertLayer::create(nullptr, "Success", "The level has been loaded", "OK", nullptr, 320.f, false, 0);
-			// return;
 			nfdchar_t* path = nullptr;
-			println("going 2 open the dialog");
 			if (NFD_OpenDialog("gmd", nullptr, &path) == NFD_OKAY) {
 				std::ifstream file(path);
-				println("going 2 import lvl");
 				auto* const level = import_level(file);
 				free(path);
-				println("imported");
 				if (!level) {
-				// 	FLAlertLayer::create(nullptr, "Error", "Failed to import", "OK", nullptr, 320.f, false, 0)->show();
+					FLAlertLayer::create(nullptr, "Error", "Failed to import", "OK", nullptr, 320.f, false, 0)->show();
 					return;
 				}
 				auto scene = EditLevelLayer::scene(level);
 				CCDirector::sharedDirector()->pushScene(scene);
-				println("switched scene");
-
-				println("popup");
 			}
-			println("done!");
 		};
 
 		auto button = CCMenuItemSpriteExtra::create(
