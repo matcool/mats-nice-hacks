@@ -94,6 +94,12 @@ void render_node_properties(CCNode* node) {
 		ImGui::InputInt("Z Order", &value);
 		if (value != node->getZOrder()) node->setZOrder(value);
 	}
+	if (auto rgb = dynamic_cast<CCNodeRGBA*>(node)) {
+		const auto color = rgb->getColor();
+		float colors[3] = { color.r / 255.f, color.g / 255.f, color.b / 255.f };
+		if (ImGui::ColorEdit3("Color", colors))
+			rgb->setColor(ccc3(colors[0] * 255.f, colors[1] * 255.f, colors[2] * 255.f));
+	}
 }
 
 void render_explorer_window(bool& open) {

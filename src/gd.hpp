@@ -84,6 +84,20 @@ public:
 	bool getShowProgressBar() {
 		return from<bool>(this, 0x1d4);
 	}
+
+	int getPlayerColor() {
+		return from<int>(this, 0x1c0);
+	}
+
+	int getPlayerColor2() {
+		return from<int>(this, 0x1c4);
+	}
+
+	cocos2d::ccColor3B colorForIdx(int colorID) {
+		cocos2d::ccColor3B out;
+		reinterpret_cast<cocos2d::ccColor3B*(__thiscall*)(GameManager*, cocos2d::ccColor3B*, int)>(base + 0x6a410)(this, &out, colorID);
+		return out;
+	}
 };
 
 class PlayerObject;

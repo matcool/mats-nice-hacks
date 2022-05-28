@@ -12,6 +12,8 @@
 #include <unordered_map>
 #include <memory>
 #include <unordered_set>
+#include <cocos-ext.h>
+#include "hsv.hpp"
 
 using namespace matdash;
 
@@ -121,11 +123,37 @@ void log_obj_vector(const std::vector<GameObject*>& objects) {
 	std::cout << ']' << std::endl;
 }
 
-// TODO: this
-GDColor calculate_lbg(const GDColor& bg_color) {
-	auto color = bg_color;
-	color.blending = true;
-	return color;
+GDColor calculate_lbg(const GDColor& bg_color, const GDColor& p1_color) {
+	auto hsv = color_utils::rgb_to_hsv({
+		bg_color.r / 255., bg_color.g / 255., bg_color.b / 255. });
+	hsv.s = std::max(hsv.s - 0.2, 0.0);
+
+	const auto rgb = color_utils::hsv_to_rgb(hsv);
+
+	// pretty arbitrary but its the best i could come up with
+	// still not accurate, only works best on grayscale
+	// pure red backgrounds gd turns to pcol1 sooner
+	float amt = (rgb.r + rgb.g + rgb.b) / 3.f;
+	amt *= 8.f;
+	amt = std::min(amt, 1.f);
+	amt = amt * amt;
+
+	// println("amt is {}, ({} {} {}) ({} {} {}) ({} {} {})", amt, 
+	// 	rgb.r, rgb.g, rgb.b,
+	// 	hsv.h, hsv.s, hsv.v,
+	// 	(int)bg_color.r, (int)bg_color.g, (int)bg_color.b
+	// );
+
+	return mix_color(
+		static_cast<float>(amt),
+		p1_color,
+		GDColor {
+			static_cast<u8>(rgb.r * 255u),
+			static_cast<u8>(rgb.g * 255u),
+			static_cast<u8>(rgb.b * 255u),
+			true
+		}
+	);
 }
 
 class MyEditorLayer : public LevelEditorLayer, public ExtendBase<MyEditorLayer> {
@@ -327,8 +355,13 @@ public:
 
 		this->backgroundSprite()->setColor(bg_color);
 
-		auto lbg_color = calculate_lbg(bg_color);
-		// TODO: pcol1 and pcol2
+		auto gm = GameManager::sharedState();
+
+		GDColor p1_color(gm->colorForIdx(gm->getPlayerColor()), true);
+		GDColor p2_color(gm->colorForIdx(gm->getPlayerColor2()), true);
+
+		auto lbg_color = calculate_lbg(bg_color, p1_color);
+		
 
 		auto sections = AwesomeArray<CCArray>(this->getLevelSections());
 		for (auto objects : sections) {
@@ -358,6 +391,12 @@ public:
 					break;
 				case CustomColorMode::LightBG:
 					this->update_object_color(object, lbg_color);
+					break;
+				case CustomColorMode::PlayerCol1:
+					this->update_object_color(object, p1_color);
+					break;
+				case CustomColorMode::PlayerCol2:
+					this->update_object_color(object, p2_color);
 					break;
 				default:;
 				}
