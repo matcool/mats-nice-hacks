@@ -1,9 +1,5 @@
 name: CMake
 
-
-  with:
-    platform: x64
-
 on:
   push:
     branches: [ main ]
