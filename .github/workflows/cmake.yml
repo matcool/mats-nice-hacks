@@ -34,5 +34,5 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
        name: my-artifact
-       path: ${{github.workspace}}/build/Debug/matsnicehacks.dll
+       path: ${{github.workspace}}/build/Release/matsnicehacks.dll
       
