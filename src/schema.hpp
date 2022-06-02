@@ -217,8 +217,9 @@ void dbg_schema(const T& obj) {
 namespace {
 	template <size_t Index, class Schema, class T, class Func>
 	void visit_schema_loop(T& object, Func&& func) {
-		func<Index>(Schema::value_at<Index>(object));
-		if constexpr (N < Schema::size() - 1)
+		// terrific
+		func.template operator()<Index>(Schema::value_at<Index>(object));
+		if constexpr (Index < Schema::size() - 1)
 			visit_schema_loop<Index + 1, Schema>(object, func);
 	}	
 }
