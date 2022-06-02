@@ -16,6 +16,10 @@
 #include "preview-mode.hpp"
 #include "save-file.hpp"
 #include "lvl-share.hpp"
+#include <cocos-ext.h>
+
+#include <cmath>
+#undef isnan
 
 using namespace matdash;
 
@@ -107,6 +111,7 @@ cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
 }
 
 bool ColorSelectPopup_init(ColorSelectPopup* self, GameObject* obj, int color_id, int idk, int idk2) {
+	state().should_fix_hue = true;
 	if (!orig<&ColorSelectPopup_init>(self, obj, color_id, idk, idk2)) return false;
 
 	constexpr auto handler = [](CCObject* _self, CCObject* button) {
@@ -123,6 +128,11 @@ bool ColorSelectPopup_init(ColorSelectPopup* self, GameObject* obj, int color_id
 	menu->addChild(button);
 
 	return true;
+}
+
+void ColorSelectPopup_dtor(ColorSelectPopup* self) {
+	state().should_fix_hue = false;
+	orig<&ColorSelectPopup_dtor>(self);
 }
 
 void EditorPauseLayer_customSetup(EditorPauseLayer* self) {
@@ -211,22 +221,29 @@ void MenuLayer_onMoreGames(MenuLayer* self, CCObject* sender) {
 	layer->show();
 }
 
+matdash::cc::c_decl<cocos2d::extension::RGBA> cocos_hsv2rgb(cocos2d::extension::HSV color) {
+	if (state().should_fix_hue && std::isnan(color.h))
+		color.h = 0.0;
+	return orig<&cocos_hsv2rgb>(color);
+}
+
 void mod_main(HMODULE) {
 	// static Console console;
 	std::cout << std::boolalpha;
 
 	state().load();
 
-	static_assert(sizeof(CCObject) == 24, "CCObject is wrong!");
-	static_assert(sizeof(CCNode) == 0xe8, "CCNode size is wrong");
-	static_assert(sizeof(CCNodeRGBA) == 0xf8, "CCNodeRGBA wrong");
-	static_assert(sizeof(CCSprite) == 0x1b8, "CCSprite wrong");
-	static_assert(sizeof(CCDirector) == 0x100, "CCDirector size is wrong!");
+	// static_assert(sizeof(CCObject) == 24, "CCObject is wrong!");
+	// static_assert(sizeof(CCNode) == 0xe8, "CCNode size is wrong");
+	// static_assert(sizeof(CCNodeRGBA) == 0xf8, "CCNodeRGBA wrong");
+	// static_assert(sizeof(CCSprite) == 0x1b8, "CCSprite wrong");
+	// static_assert(sizeof(CCDirector) == 0x100, "CCDirector size is wrong!");
 
-	static_assert(offsetof(CCDirector, m_pRunningScene) == 0xa8, "this is wrong!");
-	static_assert(offsetof(CCDirector, m_pobOpenGLView) == 0x68, "This is wrong!");
+	// static_assert(offsetof(CCDirector, m_pRunningScene) == 0xa8, "this is wrong!");
+	// static_assert(offsetof(CCDirector, m_pobOpenGLView) == 0x68, "This is wrong!");
 
 	auto cocos = GetModuleHandleA("libcocos2d.dll");
+	auto cocos_ext = GetModuleHandleA("libExtensions.dll");
 	add_hook<&FMOD_setVolume>(GetProcAddress(FMOD::base, "?setVolume@ChannelControl@FMOD@@QAG?AW4FMOD_RESULT@@M@Z"));
 	add_hook<&CCKeyboardDispatcher_dispatchKeyboardMSG>(GetProcAddress(cocos, "?dispatchKeyboardMSG@CCKeyboardDispatcher@cocos2d@@QAE_NW4enumKeyCodes@2@_N@Z"));
 	// add_hook<&MenuLayer_init>(base + 0xaf210);
@@ -246,6 +263,7 @@ void mod_main(HMODULE) {
 	add_hook<&PlayLayer_update>(base + 0xe9360);
 
 	add_hook<&ColorSelectPopup_init>(base + 0x29db0);
+	add_hook<&ColorSelectPopup_dtor>(base + 0x2b050);
 
 	add_hook<&EditorPauseLayer_customSetup>(base + 0x3e3d0);
 
@@ -257,6 +275,7 @@ void mod_main(HMODULE) {
 
 	add_hook<&CustomizeObjectLayer_init>(base + 0x2dc70);
 
+	add_hook<&cocos_hsv2rgb>(GetProcAddress(cocos_ext, "?RGBfromHSV@CCControlUtils@extension@cocos2d@@SA?AURGBA@23@UHSV@23@@Z"));
 
 	// add_hook<&MenuLayer_onMoreGames>(base + 0xb0070);
 

@@ -42,7 +42,8 @@ void imgui_render() {
 
 		// ImGui::ShowDemoWindow();
 
-		ImGui::SetNextWindowPos({ 50, 50 });
+		constexpr float border = 25;
+		ImGui::SetNextWindowPos({ border, border });
 
 		if (ImGui::Begin("mat's nice hacks", nullptr,
 			ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar)) {

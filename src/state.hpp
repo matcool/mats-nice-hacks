@@ -34,6 +34,10 @@ struct StateStruct {
 	bool hide_grid = false;
 
 	bool preview_mode = false;
+	// fixes the piss yellow color u get sometimes
+	// its a 1.9 bug thats fixed in 2.1 however
+	// this only turns on on the editor color picker
+	bool should_fix_hue = false;
 
 	void load();
 	void save();
