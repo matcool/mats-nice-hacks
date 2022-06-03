@@ -55,7 +55,6 @@ void PlayLayer_spawnPlayer2(PlayLayer* self) {
 static bool g_holding_in_editor = false;
 
 void EditorUI_onPlaytest(EditorUI* self, void* btn) {
-	println("onPlaytest {}", g_holding_in_editor);
 	if (!g_holding_in_editor)
 		return orig<&EditorUI_onPlaytest>(self, btn);
 }

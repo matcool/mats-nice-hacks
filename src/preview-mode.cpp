@@ -84,11 +84,13 @@ struct GDColor {
 	bool blending = false;
 
 	GDColor() {}
-	GDColor(u8 r, u8 g, u8 b, bool blending) : r(r), g(g), b(b), blending(blending) {}
-	GDColor(const ccColor3B color, bool blending = false) : r(color.r), g(color.g), b(color.b), blending(blending) {}
+	constexpr GDColor(u8 r, u8 g, u8 b, bool blending) : r(r), g(g), b(b), blending(blending) {}
+	constexpr GDColor(const ccColor3B color, bool blending = false) : r(color.r), g(color.g), b(color.b), blending(blending) {}
 	GDColor(GameObject* object) : GDColor(object->triggerColor(), object->triggerBlending()) {}
 	GDColor(SettingsColorObject* color) : GDColor(color->m_color, color->m_blending) {}
 	operator ccColor3B() const { return { r, g, b }; }
+
+	bool operator==(const GDColor& other) { return std::tie(r, g, b, blending) == std::tie(other.r, other.g, other.b, other.blending); }
 };
 
 GDColor mix_color(float value, GDColor a, GDColor b) {
@@ -156,6 +158,8 @@ GDColor calculate_lbg(const GDColor& bg_color, const GDColor& p1_color) {
 	);
 }
 
+bool was_preview_mode_enabled = false;
+
 class MyEditorLayer : public LevelEditorLayer, public ExtendBase<MyEditorLayer> {
 public:
 	Field<std::unordered_map<ColorTriggers, std::vector<GameObject*>>> m_color_triggers;
@@ -187,7 +191,6 @@ public:
 
 		auto gamesheet_texture = CCTextureCache::sharedTextureCache()->addImage("GJ_GameSheet.png", false);
 		auto blending_batch_node = CCSpriteBatchNode::createWithTexture(gamesheet_texture);
-		println("blending node {}", blending_batch_node);
 		this->gameLayer()->addChild(blending_batch_node, 0);
 
 		blending_batch_node->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
@@ -223,6 +226,9 @@ public:
 			// TODO: just swap it instead of removing and reinserting
 			this->remove_trigger(object);
 			this->insert_trigger(object);
+
+			if (state().preview_mode)
+				this->update_preview_mode();
 		}
 	}
 
@@ -294,20 +300,36 @@ public:
 	void updateVisibility(float dt) {
 		orig<&MyEditorLayer::updateVisibility, Thiscall>(this, dt);
 
-		if (is_editor_paused || !state().preview_mode) return;
+		if (is_editor_paused) return;
+		if (!state().preview_mode) {
+			if (was_preview_mode_enabled)
+				reset_colors();
+			was_preview_mode_enabled = false;
+			return;
+		}
 
-		float pos;
-		if (this->getPlaytestState() != 0)
-			pos = this->getPlayer1()->getPositionX();
-		else if (this->editorUI()->isPlayback())
-			pos = this->getDrawGrid()->getPlaybackLinePos();
-		else
-			pos = -(this->gameLayer()->getPosition().x) / this->gameLayer()->getScale() + 285;
+		const auto pos = this->get_preview_pos();
 
-		if (std::abs(pos - this->*m_last_pos) < 0.01f) return;
+		if (was_preview_mode_enabled && std::abs(pos - this->*m_last_pos) < 0.01f) return;
 		this->*m_last_pos = pos;
-		
+		was_preview_mode_enabled = true;
+
+		this->update_preview_mode();
+	}
+
+	float get_preview_pos() {
+		if (this->getPlaytestState() != 0)
+			return this->getPlayer1()->getPositionX();
+		else if (this->editorUI()->isPlayback())
+			return this->getDrawGrid()->getPlaybackLinePos();
+		else
+			return -(this->gameLayer()->getPosition().x) / this->gameLayer()->getScale() + 285;
+	}
+
+	void update_preview_mode() {
 		GDColor bg_color, obj_color, dl_color, color1, color2, color3, color4;
+
+		const auto pos = this->get_preview_pos();
 	
 		auto settings = this->getLevelSettings();
 		for (auto& [type, triggers] : this->*m_color_triggers) {
@@ -403,6 +425,34 @@ public:
 			}
 		}
 	}
+
+	void reset_colors() {
+		this->backgroundSprite()->setColor(ccc3(166, 166, 166));
+		auto sections = AwesomeArray<CCArray>(this->getLevelSections());
+		for (auto objects : sections) {
+			if (!objects) continue;
+			for (auto object : AwesomeArray<GameObject>(objects)) {
+				if (!object || object->isSelected()) continue;
+
+				if (object->getIsTintObject())
+					object->setObjectColor(ccc3(255, 255, 255));
+
+				auto mode = object->getActiveColorMode();
+				const std::unordered_map<CustomColorMode, GDColor> default_colors = {
+					{ CustomColorMode::Default, GDColor(255, 255, 255, false) },
+					{ CustomColorMode::DL, GDColor(255, 255, 0, false) },
+					{ CustomColorMode::Col1, GDColor(255, 150, 255, false) },
+					{ CustomColorMode::Col2, GDColor(255, 255, 150, false) },
+					{ CustomColorMode::Col3, GDColor(150, 255, 255, false) },
+					{ CustomColorMode::Col4, GDColor(150, 255, 150, false) },
+					{ CustomColorMode::LightBG, GDColor(75, 175, 255, false) },
+					{ CustomColorMode::PlayerCol1, GDColor(175, 150, 255, false) },
+					{ CustomColorMode::PlayerCol2, GDColor(255, 150, 150, false) }
+				};
+				this->update_object_color(object, default_colors.at(mode));
+			}
+		}
+	}
 };
 
 MyEditorLayer* MyEditorLayer::s_instance = nullptr;
@@ -461,6 +511,23 @@ void EditorUI_scrollWheel(EditorUI* _self, float dy, float dx) {
 	}
 }
 
+void EditorUI_deselectAll(EditorUI* self) {
+	const auto objs = self->getSelectedObjects();
+	orig<&EditorUI_deselectAll>(self);
+	if (!objs.empty() && state().preview_mode) {
+		if (auto editor = MyEditorLayer::s_instance; editor)
+			editor->update_preview_mode();
+	}
+}
+
+void EditorUI_updateZoom(EditorUI* self, float amt) {
+	orig<&EditorUI_updateZoom>(self, amt);
+	if (auto editor = MyEditorLayer::s_instance; editor && state().preview_mode) {
+		// y does editor->*m_last_pos not work
+		operator->*(editor, editor->m_last_pos) = -999;
+	}
+}
+
 void preview_mode::init() {
 	add_hook<&MyEditorLayer::updateVisibility, Thiscall>(base + 0x8ef20);
 	add_hook<&MyEditorLayer::addSpecial>(base + 0x8ed10);
@@ -470,6 +537,8 @@ void preview_mode::init() {
 	add_hook<&MyEditorLayer::removeSpecial>(base + 0x8ee30);
 
 	add_hook<&EditorUI_scrollWheel, Thiscall>(base + 0x4ee90);
+	add_hook<&EditorUI_deselectAll>(base + 0x48380);
+	add_hook<&EditorUI_updateZoom>(base + 0x48c30);
 
 	add_hook<&EditorPauseLayer_init>(base + 0x3e2e0);
 	add_hook<&EditorPauseLayer_dtor>(base + 0x3e280);
