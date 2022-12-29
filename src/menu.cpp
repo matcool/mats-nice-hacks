@@ -41,9 +41,11 @@ void imgui_render() {
 	if (state().visible || force) {
 
 		// ImGui::ShowDemoWindow();
+		auto frame_size = CCDirector::sharedDirector()->getOpenGLView()->getFrameSize();
 
 		constexpr float border = 25;
 		ImGui::SetNextWindowPos({ border, border });
+		ImGui::SetNextWindowSizeConstraints({0, 0}, {frame_size.width, frame_size.height - border * 2.f});
 
 		if (ImGui::Begin("mat's nice hacks", nullptr,
 			ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar)) {
@@ -129,6 +131,7 @@ void imgui_render() {
 				// LevelEditorLayer::update
 				patch_toggle(base + 0x91a34, { 0x90, 0x90 }, state().smooth_editor_trail);
 			}
+			ImGui::Checkbox("Always fix yellow color bug", &state().always_fix_hue);
 		}
 		ImGui::End();
 

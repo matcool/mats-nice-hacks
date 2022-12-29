@@ -221,7 +221,7 @@ void MenuLayer_onMoreGames(MenuLayer* self, CCObject* sender) {
 }
 
 matdash::cc::c_decl<cocos2d::extension::RGBA> cocos_hsv2rgb(cocos2d::extension::HSV color) {
-	if (state().should_fix_hue && std::isnan(color.h))
+	if ((state().should_fix_hue || state().always_fix_hue) && std::isnan(color.h))
 		color.h = 0.0;
 	return orig<&cocos_hsv2rgb>(color);
 }

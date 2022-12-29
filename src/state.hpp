@@ -38,6 +38,7 @@ struct StateStruct {
 	// its a 1.9 bug thats fixed in 2.1 however
 	// this only turns on on the editor color picker
 	bool should_fix_hue = false;
+	bool always_fix_hue = false;
 
 	void load();
 	void save();
@@ -50,4 +51,4 @@ DEF_SCHEMA(StateStruct, speed, has_retry_keybind,
 	no_particles, copy_hack, fps_bypass, fps,
 	hide_practice, show_percent, verify_hack,
 	hide_attempts, edit_level, hide_trigger_lines, hide_grid,
-	smooth_editor_trail)
+	smooth_editor_trail, always_fix_hue)
