@@ -302,7 +302,7 @@ public:
 
 		const auto pos = this->get_preview_pos();
 
-		if (was_preview_mode_enabled && std::abs(pos - this->*m_last_pos) < 0.01f) return;
+		if (was_preview_mode_enabled && pos == this->*m_last_pos) return;
 		this->*m_last_pos = pos;
 		was_preview_mode_enabled = true;
 
