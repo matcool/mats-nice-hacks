@@ -54,7 +54,7 @@ auto format_addr(void* addr) {
 		reinterpret_cast<char*>(addr), &mod))
 		mod = NULL;
 
-	return format("{}.{}", get_module_name(mod),
+	return ::format("{}.{}", get_module_name(mod),
 		reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(addr) - reinterpret_cast<uintptr_t>(mod)));
 }
 

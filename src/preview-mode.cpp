@@ -125,37 +125,29 @@ void log_obj_vector(const std::vector<GameObject*>& objects) {
 	std::cout << ']' << std::endl;
 }
 
+// accurate lbg calculation, thanks to sSolsta and zmx
 GDColor calculate_lbg(const GDColor& bg_color, const GDColor& p1_color) {
 	auto hsv = color_utils::rgb_to_hsv({
 		bg_color.r / 255., bg_color.g / 255., bg_color.b / 255. });
 	hsv.s = std::max(hsv.s - 0.2, 0.0);
+	hsv.v = std::min(hsv.v + 0.2, 1.0);
 
 	const auto rgb = color_utils::hsv_to_rgb(hsv);
 
-	// pretty arbitrary but its the best i could come up with
-	// still not accurate, only works best on grayscale
-	// pure red backgrounds gd turns to pcol1 sooner
-	float amt = (rgb.r + rgb.g + rgb.b) / 3.f;
-	amt *= 8.f;
-	amt = std::min(amt, 1.f);
-	amt = amt * amt;
+	const auto lbg_color = GDColor {
+		static_cast<u8>(rgb.r * 255.),
+		static_cast<u8>(rgb.g * 255.),
+		static_cast<u8>(rgb.b * 255.),
+		true
+	};
 
-	// println("amt is {}, ({} {} {}) ({} {} {}) ({} {} {})", amt, 
-	// 	rgb.r, rgb.g, rgb.b,
-	// 	hsv.h, hsv.s, hsv.v,
-	// 	(int)bg_color.r, (int)bg_color.g, (int)bg_color.b
-	// );
-
-	return mix_color(
-		static_cast<float>(amt),
-		p1_color,
-		GDColor {
-			static_cast<u8>(rgb.r * 255u),
-			static_cast<u8>(rgb.g * 255u),
-			static_cast<u8>(rgb.b * 255u),
-			true
-		}
-	);
+	const auto amt = (static_cast<float>(bg_color.r) + static_cast<float>(bg_color.g) + static_cast<float>(bg_color.b)) / 150.f;
+	
+	if (amt < 1.f) {
+		return mix_color(amt, p1_color, lbg_color);
+	} else {
+		return lbg_color;
+	}
 }
 
 bool was_preview_mode_enabled = false;
