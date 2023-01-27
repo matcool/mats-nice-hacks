@@ -36,13 +36,16 @@ void patch_toggle(uintptr_t addr, const std::vector<uint8_t>& bytes, bool replac
 
 void imgui_render() {
 	const bool force = state().just_loaded;
+	const auto& font = ImGui::GetIO().Fonts->Fonts.back();
+	ImGui::PushFont(font);
 	if (state().visible || force) {
-		const auto& font = ImGui::GetIO().Fonts->Fonts.back();
-		ImGui::PushFont(font);
 
 		// ImGui::ShowDemoWindow();
+		auto frame_size = CCDirector::sharedDirector()->getOpenGLView()->getFrameSize();
 
-		ImGui::SetNextWindowPos({ 50, 50 });
+		constexpr float border = 25;
+		ImGui::SetNextWindowPos({ border, border });
+		ImGui::SetNextWindowSizeConstraints({0, 0}, {frame_size.width, frame_size.height - border * 2.f});
 
 		if (ImGui::Begin("mat's nice hacks", nullptr,
 			ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar)) {
@@ -52,14 +55,20 @@ void imgui_render() {
 				ImGui::EndMenuBar();
 			}
 
-			if (ImGui::Checkbox("Speedhack", &state().speed_hack_enabled))
-				update_speed_hack();
+			ImGui::SetNextItemWidth(120);
 			if (ImGui::DragFloat("##speedhack", &state().speed, 0.05f, 0.001f, 10.f))
 				update_speed_hack();
-			if (ImGui::Checkbox("FPS bypass", &state().fps_bypass))
-				update_fps_bypass();
+			ImGui::SameLine();
+			if (ImGui::Checkbox("Speedhack", &state().speed_hack_enabled))
+				update_speed_hack();
+
+			ImGui::SetNextItemWidth(120);
 			if (ImGui::InputFloat("##fpsbypass", &state().fps))
 				update_fps_bypass();
+			ImGui::SameLine();
+			if (ImGui::Checkbox("FPS bypass", &state().fps_bypass))
+				update_fps_bypass();
+
 			ImGui::Checkbox("Retry keybind (R)", &state().has_retry_keybind);
 			if (ImGui::Checkbox("No transition", &state().no_transition) || force) {
 				// patch
@@ -122,13 +131,13 @@ void imgui_render() {
 				// LevelEditorLayer::update
 				patch_toggle(base + 0x91a34, { 0x90, 0x90 }, state().smooth_editor_trail);
 			}
+			ImGui::Checkbox("Always fix yellow color bug", &state().always_fix_hue);
 		}
 		ImGui::End();
 
 		if (state().explorer_enabled)
 			render_explorer_window(state().explorer_enabled);
 
-		ImGui::PopFont();
 	}
 	state().just_loaded = false;
 	// this is so hacky lmao
@@ -160,6 +169,17 @@ void imgui_render() {
 			just_opened = true;
 		}
 	}
+
+	if (ImGui::GetTime() < 5.0 && !state().visible) {
+		ImGui::SetNextWindowPos({ 10, 10 });
+		ImGui::Begin("startupmsgwindow", nullptr,
+			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+			ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMouseInputs | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoSavedSettings);
+		ImGui::Text("Mat's nice hacks loaded, press F1 or ~ to show menu");
+		ImGui::End();
+	}
+
+	ImGui::PopFont();
 }
 
 void imgui_init() {

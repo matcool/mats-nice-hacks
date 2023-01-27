@@ -128,48 +128,48 @@ struct schema_access {
 
 template <class T, class Child>
 struct SchemaBase : public schema_access {
-    template <template <class> class Func>
-    static auto& load_from(T& obj) {
-        _loop<0, Func>(&obj);
-        return obj;
-    }
+	template <template <class> class Func>
+	static auto& load_from(T& obj) {
+		_loop<0, Func>(&obj);
+		return obj;
+	}
 
-    template <template <class> class Func>
-    static void save_to(const T& obj) {
-        _loop<0, Func>(&obj);
-    }
+	template <template <class> class Func>
+	static void save_to(const T& obj) {
+		_loop<0, Func>(&obj);
+	}
 
 protected:
-    template <size_t N>
-    struct _type_at {
-        using type = std::tuple_element_t<N, typename Child::types>;
-    };
+	template <size_t N>
+	struct _type_at {
+		using type = std::tuple_element_t<N, typename Child::types>;
+	};
 public:
 
-    template <size_t N>
-    using type_at = typename _type_at<N>::type;
+	template <size_t N>
+	using type_at = typename _type_at<N>::type;
 
-    template <size_t N>
-    static auto& value_at(T* obj) {
-        return *reinterpret_cast<type_at<N>*>(reinterpret_cast<uintptr_t>(obj) + Child::offsets[N]);
-    }
+	template <size_t N>
+	static auto& value_at(T& obj) {
+		return *reinterpret_cast<type_at<N>*>(reinterpret_cast<uintptr_t>(&obj) + Child::offsets[N]);
+	}
 
-    template <size_t N>
-    static const auto& value_at(const T* obj) {
-        return *reinterpret_cast<type_at<N>*>(reinterpret_cast<uintptr_t>(obj) + Child::offsets[N]);
-    }
+	template <size_t N>
+	static const auto& value_at(const T& obj) {
+		return *reinterpret_cast<type_at<N>*>(reinterpret_cast<uintptr_t>(&obj) + Child::offsets[N]);
+	}
 
-    static constexpr size_t size() {
-        return std::tuple_size_v<typename Child::types>;
-    }
+	static constexpr size_t size() {
+		return std::tuple_size_v<typename Child::types>;
+	}
 
 protected:
-    template <size_t N, template <class> class Func, class U>
-    static void _loop(U* obj) {
-        Func<type_at<N>>::exec(value_at<N>(obj), Child::names[N]);
-        if constexpr (N < size() - 1)
-            _loop<N + 1, Func, U>(obj);
-    }
+	template <size_t N, template <class> class Func, class U>
+	static void _loop(U* obj) {
+		Func<type_at<N>>::exec(value_at<N>(obj), Child::names[N]);
+		if constexpr (N < size() - 1)
+			_loop<N + 1, Func, U>(obj);
+	}
 };
 
 template <class>
@@ -185,29 +185,47 @@ using get_schema = typename GetSchema<T>::type;
 #define _GEN_NAMES(x) #x
 
 #define DEF_SCHEMA(name, ...) \
-    struct gen_name(name) : public SchemaBase<name, gen_name(name)> { \
-    public: \
-        friend SchemaBase<name, gen_name(name)>; \
-        using base = name; \
-        using types = std::tuple<MAP_LIST_UD(_GEN_DECLTYPES, name, __VA_ARGS__)>; \
-        static constexpr const size_t offsets[] = {MAP_LIST_UD(_GEN_OFFSETS, name, __VA_ARGS__)}; \
-        static constexpr const char* names[] = {MAP_LIST(_GEN_NAMES, __VA_ARGS__)}; \
-        static constexpr const char* my_name = #name; \
-    }; \
-    template <> \
-    struct GetSchema<name> { using type = gen_name(name); };
+	struct gen_name(name) : public SchemaBase<name, gen_name(name)> { \
+	public: \
+		friend SchemaBase<name, gen_name(name)>; \
+		using base = name; \
+		using types = std::tuple<MAP_LIST_UD(_GEN_DECLTYPES, name, __VA_ARGS__)>; \
+		static constexpr const size_t offsets[] = {MAP_LIST_UD(_GEN_OFFSETS, name, __VA_ARGS__)}; \
+		static constexpr const char* names[] = {MAP_LIST(_GEN_NAMES, __VA_ARGS__)}; \
+		static constexpr const char* my_name = #name; \
+	}; \
+	template <> \
+	struct GetSchema<name> { using type = gen_name(name); };
 
-template <size_t N, class S, class T>
-void __dbg_schema_loop(const T* obj) {
-    std::cout << "  " << S::names[N] << " = " << S::value_at<N>(obj) << std::endl;
-    if constexpr (N < S::size() - 1)
-        __dbg_schema_loop<N + 1, S>(obj);
+namespace {
+	template <size_t N, class S, class T>
+	void dbg_schema_loop(const T* obj) {
+		std::cout << "  " << S::names[N] << " = " << S::value_at<N>(obj) << std::endl;
+		if constexpr (N < S::size() - 1)
+			dbg_schema_loop<N + 1, S>(obj);
+	}
 }
 
 template <class T>
 void dbg_schema(const T& obj) {
-    using S = get_schema<T>;
-    std::cout << "schema " << S::my_name << " {" << std::endl;
-    __dbg_schema_loop<0, S>(&obj);
-    std::cout << "}" << std::endl;
+	using S = get_schema<T>;
+	std::cout << "schema " << S::my_name << " {" << std::endl;
+	dbg_schema_loop<0, S>(&obj);
+	std::cout << "}" << std::endl;
+}
+
+namespace {
+	template <size_t Index, class Schema, class T, class Func>
+	void visit_schema_loop(T& object, Func&& func) {
+		// terrific
+		func.template operator()<Index>(Schema::value_at<Index>(object));
+		if constexpr (Index < Schema::size() - 1)
+			visit_schema_loop<Index + 1, Schema>(object, func);
+	}	
+}
+
+template <class T, class Func>
+void visit_schema(T& object, Func&& func) {
+	using Schema = get_schema<T>;
+	visit_schema_loop<0, Schema>(object, func);
 }

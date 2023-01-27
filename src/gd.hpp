@@ -139,6 +139,8 @@ public:
 	}
 };
 
+class GameObject;
+
 class EditorUI : public CCLayer {
 public:
 	auto pasteObjects(const std::string& str) {
@@ -159,6 +161,17 @@ public:
 
 	void updateZoom(float amt) {
 		reinterpret_cast<void(__vectorcall*)(float, float, EditorUI*)>(base + 0x48c30)(0.f, amt, this);
+	}
+
+	std::vector<GameObject*> getSelectedObjects() {
+		const auto single = from<GameObject*>(this, 0x258);
+		if (single) return { single };
+		const auto selectedArr = from<CCArray*>(this, 0x18c);
+		if (!selectedArr) return {};
+		std::vector<GameObject*> output;
+		for (size_t i = 0; i < selectedArr->count(); ++i)
+			output.push_back(reinterpret_cast<GameObject*>(selectedArr->objectAtIndex(i)));
+		return output;
 	}
 };
 
@@ -300,6 +313,9 @@ public:
 	void setCustomColor(ccColor3B color) {
 		if (getHasColor()) setChildColor(color);
 		else setObjectColor(color);
+	}
+	auto getActiveColorMode() {
+		return from<CustomColorMode>(this, 0x308);
 	}
 	auto getColorMode() {
 		auto active = from<CustomColorMode>(this, 0x308);
